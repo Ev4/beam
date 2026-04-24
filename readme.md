@@ -30,7 +30,7 @@ The persistent notification is configurable:
 
 ## Screenshots
 
-**Status Bar**
+**Home Screen**
 
 <img src="readme/home.png" alt="Home Screen" width="360" />
 
