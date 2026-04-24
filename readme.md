@@ -1,14 +1,15 @@
-# Wattz
+# Beam
 
 [<img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="64">](https://play.google.com/store/apps/details?id=dubrowgn.wattz)
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="64">](https://f-droid.org/packages/dubrowgn.wattz/)
 
-*Wattz* is a simple battery indicator. It shows one of several real time battery
-metrics right in your status bar. Open the app to see detailed battery metrics
-and and edit your settings.
+*Beam* is a real-time battery monitor. It displays live battery metrics as
+persistent notifications in your status bar, and shows a full breakdown of
+battery metrics in-app.
 
-Notification permissions are required to show the indicator in the status bar.
-Please open the app once to automatically start the indicator service.
+You can configure multiple independent notifications, each with its own icon
+metric and optional body entries. Notification permissions are required;
+open the app once to grant them and start the monitor service automatically.
 
 This app respects your privacy!
 * No unnecessary permissions
@@ -26,6 +27,10 @@ Detailed battery metrics include:
 * Is Charging (yes/no)
 * Charging Since (date/time)
 * Time to Full Charge (duration)
+
+Each persistent notification is independently configurable:
+* Icon metric — any of the above metrics displayed in the notification icon
+* Body entries — additional metrics shown in the notification body
 
 ## Screenshots
 
@@ -47,12 +52,12 @@ Detailed battery metrics include:
 
     Many phones, especially Samsungs, don't follow the BatteryManager spec. Try changing "Power Scalar Workaround" in the settings view.
 
-2. Why does my external power meter show different power numbers than *Wattz*?
+2. Why does my external power meter show different power numbers than *Beam*?
 
-    Wattz can only measure power coming into or out of the battery management system. Your external meter is measuring this plus any power your phone is using in addition to that.
+    *Beam* can only measure power coming into or out of the battery management system. Your external meter is measuring this plus any power your phone is using in addition to that.
 
 3. Why isn't the indicator showing up in my status bar?
 
-    *Wattz* needs notification permissions on newer Android phones in order to show the indicator. Make sure to open *Wattz* at least once, where it should prompt you to grant it permissions. Otherwise, check the Android app settings to ensure *Wattz* has notification permissions.
+    *Beam* needs notification permissions on newer Android phones in order to show the indicator. Make sure to open *Beam* at least once, where it should prompt you to grant it permissions. Otherwise, check the Android app settings to ensure *Beam* has notification permissions.
 
-   Keep in mind, Android can revoke these permissions at any time without telling you, so you may need to re-enable them periodically.
+    Keep in mind, Android can revoke these permissions at any time without telling you, so you may need to re-enable them periodically.
