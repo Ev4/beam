@@ -17,10 +17,12 @@ import java.time.format.DateTimeFormatter
 class StatusService : Service() {
     private lateinit var battery: Battery
     private val dateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-    private var indicatorUnits: String? = null
-    private lateinit var noteBuilder: Notification.Builder
+    private val metricOrder = listOf("W", "A", "Ah", "C", "V", "Wh", "%")
+    private lateinit var noteIntent: PendingIntent
     private lateinit var noteMgr: NotificationManager
     private var pluggedInAt: ZonedDateTime? = null
+    private var pduConfigs: List<PduConfig> = listOf(PduConfig("W", emptySet()))
+    private val additionalNoteIds = mutableSetOf<Int>()
     private lateinit var snapshot: BatterySnapshot
     private val task = PeriodicTask({ update() }, intervalMs)
 
@@ -54,8 +56,36 @@ class StatusService : Service() {
         val settings = getSharedPreferences(settingsName, MODE_MULTI_PROCESS)
         battery.currentScalar = settings.getFloat("currentScalar", 1f).toDouble()
         battery.invertCurrent = settings.getBoolean("invertCurrent", false)
-        indicatorUnits = settings.getString("indicatorUnits", null);
+        val raw = settings.getString("pduList", null)
+        pduConfigs = if (raw != null) {
+            parsePduList(raw)
+        } else {
+            val old = settings.getStringSet("indicatorEntries", null)
+                ?.filter { it != "W" }?.toSet() ?: emptySet()
+            listOf(PduConfig("W", old))
+        }
     }
+
+    private fun metricLabel(key: String) = getString(when (key) {
+        "A"        -> R.string.current
+        "Ah", "Wh" -> R.string.energy
+        "C"        -> R.string.temperature
+        "V"        -> R.string.voltage
+        "%"        -> R.string.chargeLevel
+        else       -> R.string.power
+    })
+
+    private fun metricValue(key: String) = fmt(when (key) {
+        "A"  -> snapshot.amps
+        "Ah" -> snapshot.energyAmpHours
+        "C"  -> snapshot.celsius
+        "V"  -> snapshot.volts
+        "Wh" -> snapshot.energyWattHours
+        "%"  -> snapshot.levelPercent
+        else -> snapshot.watts
+    })
+
+    private fun metricUnit(key: String) = if (key == "C") "°C" else key
 
     private fun init() {
         battery = Battery(applicationContext)
@@ -66,13 +96,13 @@ class StatusService : Service() {
             NotificationChannel(
                 noteChannelId,
                 "Power Status",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "Continuously displays current battery power consumption"
             }
         )
 
-        val noteIntent = PendingIntent.getActivity(
+        noteIntent = PendingIntent.getActivity(
             this,
             0,
             Intent(this, MainActivity::class.java).apply {
@@ -80,13 +110,6 @@ class StatusService : Service() {
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-
-        val ind = getString(R.string.indeterminate)
-        noteBuilder = Notification.Builder(this, noteChannelId)
-            .setContentTitle("Battery Draw: $ind W")
-            .setSmallIcon(renderIcon(ind, "W"))
-            .setContentIntent(noteIntent)
-            .setOnlyAlertOnce(true)
 
         registerReceiver(
             MsgReceiver(),
@@ -112,17 +135,17 @@ class StatusService : Service() {
         task.start()
 
         try {
-            startForeground(noteId, noteBuilder.build())
+            startForeground(noteId, buildPduNotification(pduConfigs[0], 0))
         } catch (e: Exception) {
             error("Failed to foreground StatusService: ${e.message}")
         }
 
-        return START_STICKY;
+        return START_STICKY
     }
 
     override fun onDestroy() {
         debug("onDestroy()")
-
+        additionalNoteIds.forEach { noteMgr.cancel(it) }
         super.onDestroy()
     }
 
@@ -135,19 +158,63 @@ class StatusService : Service() {
         val w = (48f * density).toInt()
         val bitmap = Bitmap.createBitmap(w, w, Bitmap.Config.ALPHA_8)
         val canvas = Canvas(bitmap)
+        val paint = Paint().apply {
+            typeface = Typeface.DEFAULT_BOLD
+            style = Paint.Style.FILL
+            color = Color.WHITE
+            textAlign = Paint.Align.CENTER
+        }
+        val maxWidth = w * 0.92f
+        val split = w * 0.70f
 
-        val textSize = 28f * density
-        val paint = Paint()
-        paint.textSize = textSize
-        paint.typeface = Typeface.DEFAULT_BOLD
-        paint.style = Paint.Style.FILL
-        paint.color = Color.WHITE
-        paint.textAlign = Paint.Align.CENTER
+        fun fitWidth(text: String, maxH: Float): Float {
+            paint.textSize = 100f
+            return minOf(100f * maxWidth / paint.measureText(text), maxH)
+        }
 
-        canvas.drawText(value, w / 2f, w / 2f, paint)
-        canvas.drawText(unit, w / 2f, w.toFloat(), paint)
+        paint.textSize = fitWidth(unit, split * 0.40f)
+        val uFm = paint.fontMetrics
+        canvas.drawText(unit, w / 2f, (split + w) / 2f - (uFm.ascent + uFm.descent) / 2f, paint)
+
+        paint.textSize = fitWidth(value, split * 0.90f)
+        val vFm = paint.fontMetrics
+        canvas.drawText(value, w / 2f, split / 2f - (vFm.ascent + vFm.descent) / 2f, paint)
 
         return Icon.createWithBitmap(bitmap)
+    }
+
+    private fun buildPduNotification(pdu: PduConfig, index: Int): Notification {
+        val iconValue = metricValue(pdu.iconMetric)
+        val iconUnit  = metricUnit(pdu.iconMetric)
+        val timeText  = when (val seconds = snapshot.secondsUntilCharged) {
+            null -> ""
+            0.0  -> getString(R.string.fullyCharged)
+            else -> "${fmtSeconds(seconds)} until full charge"
+        }
+
+        val builder = Notification.Builder(this, noteChannelId)
+            .setContentTitle("$iconValue $iconUnit")
+            .setSmallIcon(renderIcon(iconValue, iconUnit))
+            .setContentIntent(noteIntent)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setGroup("$noteChannelId.$index")
+
+        if (pdu.bodyEntries.isEmpty()) {
+            builder.setStyle(null).setContentText(timeText)
+        } else {
+            val entries = pdu.bodyEntries.sortedBy { metricOrder.indexOf(it) }
+            val style = Notification.InboxStyle()
+            entries.forEach { key ->
+                style.addLine("${metricLabel(key)}  ${metricValue(key)}${metricUnit(key)}")
+            }
+            if (timeText.isNotEmpty()) style.setSummaryText(timeText)
+            builder
+                .setStyle(style)
+                .setContentText(entries.joinToString("  ") { k -> "${metricValue(k)}${metricUnit(k)}" })
+        }
+
+        return builder.build()
     }
 
     private fun updateData() {
@@ -198,42 +265,15 @@ class StatusService : Service() {
 
         snapshot = battery.snapshot()
 
-        val txtLabel = when (indicatorUnits) {
-            "A" -> getString(R.string.current)
-            "Ah" -> getString(R.string.energy)
-            "C" -> getString(R.string.temperature)
-            "V" -> getString(R.string.voltage)
-            "Wh" -> getString(R.string.energy)
-            "%" -> getString(R.string.chargeLevel)
-            else -> getString(R.string.power)
+        val currentIds = (1 until pduConfigs.size).map { noteId + it }.toSet()
+        additionalNoteIds.subtract(currentIds).forEach { noteMgr.cancel(it) }
+        additionalNoteIds.retainAll(currentIds)
+
+        pduConfigs.forEachIndexed { i, pdu ->
+            val id = noteId + i
+            noteMgr.notify(id, buildPduNotification(pdu, i))
+            if (i > 0) additionalNoteIds.add(id)
         }
-        val txtValue = fmt( when (indicatorUnits) {
-            "A" -> snapshot.amps
-            "Ah" -> snapshot.energyAmpHours
-            "C" -> snapshot.celsius
-            "V" -> snapshot.volts
-            "Wh" -> snapshot.energyWattHours
-            "%" -> snapshot.levelPercent
-            else -> snapshot.watts
-        })
-        val txtUnits = when (indicatorUnits) {
-            "C" -> "°C"
-            else -> indicatorUnits ?: "W"
-        }
-
-        noteBuilder
-            .setContentTitle("${getString(R.string.battery)} ${txtLabel}: ${txtValue}${txtUnits}")
-            .setSmallIcon(renderIcon(txtValue, txtUnits))
-
-        noteBuilder.setContentText(
-            when(val seconds = snapshot.secondsUntilCharged) {
-                null -> ""
-                0.0 -> "fully charged"
-                else -> "${fmtSeconds(seconds)} until full charge"
-            }
-        )
-
-        noteMgr.notify(noteId, noteBuilder.build())
 
         updateData()
     }

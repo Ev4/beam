@@ -1,5 +1,6 @@
 package dubrowgn.wattz
 
+import java.util.Locale
 import kotlin.math.absoluteValue
 
 fun fmt(v: Double?): String {
@@ -9,7 +10,7 @@ fun fmt(v: Double?): String {
     if (v.absoluteValue >= 10.0)
         return "%.0f".format(v)
 
-    return "%.1f".format(v)
+    return "%.1f".format(Locale.ROOT, v)
 }
 
 fun fmtSeconds(seconds: Double?): String {

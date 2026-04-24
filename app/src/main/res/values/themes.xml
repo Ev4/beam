@@ -2,11 +2,22 @@
     <color name="background">#ffffff</color>
     <color name="foreground">#212121</color>
     <color name="foreground_strong">#000000</color>
-    <style name="Theme.Wattz" parent="android:Theme.DeviceDefault.Light.NoActionBar">
-        <item name="android:statusBarColor">@color/primary_variant</item>
+    <style name="Theme.Wattz" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/text_on_primary</item>
+        <item name="android:statusBarColor">?attr/colorPrimary</item>
         <item name="android:textSize">@dimen/text_size</item>
-        <item name="android:colorAccent">@color/primary</item>
         <item name="android:textColor">@color/foreground</item>
         <item name="android:windowBackground">@color/background</item>
+    </style>
+    <style name="ThemeOverlay.Wattz.Oled" parent="">
+        <item name="android:windowBackground">@color/oled_black</item>
+        <item name="colorSurface">@color/oled_black</item>
+        <item name="colorSurfaceVariant">#0d0d0d</item>
+        <item name="colorSurfaceContainerLowest">@color/oled_black</item>
+        <item name="colorSurfaceContainerLow">#050505</item>
+        <item name="colorSurfaceContainer">#090909</item>
+        <item name="colorSurfaceContainerHigh">#0e0e0e</item>
+        <item name="colorSurfaceContainerHighest">#131313</item>
     </style>
 </resources>

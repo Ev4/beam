@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Wattz</string>
+    <string name="app_name">Beam</string>
     <string name="back">Back</string>
     <string name="battery">Battery</string>
     <string name="charging">Charging</string>
@@ -10,6 +10,10 @@
     <string name="fullyCharged">fully charged</string>
     <string name="indeterminate">-</string>
     <string name="statusBarIndicator">Status Bar Indicator</string>
+    <string name="notifications">Notifications</string>
+    <string name="notificationIcon">Icon</string>
+    <string name="notificationBody">Body</string>
+    <string name="addNotification">Add Notification</string>
     <string name="no">no</string>
     <string name="power">Power</string>
     <string name="settings">Settings</string>
@@ -20,6 +24,14 @@
     <string name="yes">yes</string>
 
     <!-- settings -->
+    <string name="themeColor">Theme Colour</string>
+    <string name="themeColorAuto">Auto</string>
+    <string name="themeColorCustom">Custom</string>
+    <string name="themeMode">Theme Mode</string>
+    <string name="themeModeSystem">System</string>
+    <string name="themeModeLight">Light</string>
+    <string name="themeModeDark">Dark</string>
+    <string name="themeModeOled">OLED</string>
     <string name="currentScalar">Power Scalar Workaround</string>
     <string name="currentScalarDesc">When not plugged in, change this scalar until \u0022Power\u0022 is greater than 0W, but less than about 10W.</string>
     <string name="invertCurrent">Charging Workaround</string>

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Wattz</string>
+    <string name="app_name">Beam</string>
     <string name="back">Atrás</string>
     <string name="battery">Batería</string>
     <string name="charging">Cargando</string>
@@ -10,6 +10,10 @@
     <string name="fullyCharged">Completamente cargado</string>
     <string name="indeterminate">-</string>
     <string name="statusBarIndicator">Indicador de barra de estado</string>
+    <string name="notifications">Notificaciones</string>
+    <string name="notificationIcon">Icono</string>
+    <string name="notificationBody">Cuerpo</string>
+    <string name="addNotification">Agregar notificación</string>
     <string name="no">No</string>
     <string name="power">Potencia</string>
     <string name="settings">Ajustes</string>
@@ -20,6 +24,14 @@
     <string name="yes">Sí</string>
 
     <!-- settings -->
+    <string name="themeColor">Color del tema</string>
+    <string name="themeColorAuto">Automático</string>
+    <string name="themeColorCustom">Personalizado</string>
+    <string name="themeMode">Modo de tema</string>
+    <string name="themeModeSystem">Sistema</string>
+    <string name="themeModeLight">Claro</string>
+    <string name="themeModeDark">Oscuro</string>
+    <string name="themeModeOled">OLED</string>
     <string name="currentScalar">Escala de potencia alternativa</string>
     <string name="currentScalarDesc">Cuando no esté enchufado, cambie esta unidad de escala hasta que \u0022Potencia\u0022 sea mayor de 0W, pero menor de 10W.</string>
     <string name="invertCurrent">Solución alternativa de carga</string>

@@ -1,0 +1,401 @@
+package dubrowgn.wattz.ui
+
+import android.content.Context
+import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import dubrowgn.wattz.BatteryViewModel
+import dubrowgn.wattz.PduConfig
+import dubrowgn.wattz.R
+import dubrowgn.wattz.applyNightMode
+import dubrowgn.wattz.parsePduList
+import dubrowgn.wattz.serializePduList
+import dubrowgn.wattz.settingsName
+import dubrowgn.wattz.settingsUpdateInd
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewModel()) {
+    val data by vm.data.collectAsState()
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences(settingsName, Context.MODE_PRIVATE) }
+
+    var pduConfigs by remember {
+        val raw = prefs.getString("pduList", null)
+        val initial = if (raw != null) parsePduList(raw) else {
+            val old = prefs.getStringSet("indicatorEntries", null)
+                ?.filter { it != "W" }?.toSet() ?: emptySet()
+            listOf(PduConfig("W", old))
+        }
+        mutableStateOf(initial)
+    }
+    var currentScalar by remember { mutableFloatStateOf(prefs.getFloat("currentScalar", 1f)) }
+    var invertCurrent by remember { mutableStateOf(prefs.getBoolean("invertCurrent", false)) }
+    var themeMode by remember { mutableStateOf(prefs.getString("themeMode", "system") ?: "system") }
+    var customColorValue by remember { mutableIntStateOf(prefs.getInt("themeColorValue", -1)) }
+
+    fun savePdus() {
+        prefs.edit().putString("pduList", serializePduList(pduConfigs)).commit()
+        context.sendBroadcast(Intent().setPackage(context.packageName).setAction(settingsUpdateInd))
+    }
+
+    fun saveWorkarounds() {
+        prefs.edit()
+            .putFloat("currentScalar", currentScalar)
+            .putBoolean("invertCurrent", invertCurrent)
+            .commit()
+        context.sendBroadcast(
+            Intent().setPackage(context.packageName).setAction(settingsUpdateInd)
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.settings)) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            painter = painterResource(R.drawable.ico_back),
+                            contentDescription = stringResource(R.string.back),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item { Spacer(Modifier.height(4.dp)) }
+
+            // Live preview
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(stringResource(R.string.charging), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(data.charging, style = MaterialTheme.typography.bodyLarge)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(stringResource(R.string.power), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(data.power, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            }
+
+            // Notifications (PDUs)
+            item {
+                SectionHeader(stringResource(R.string.notifications))
+                Spacer(Modifier.height(8.dp))
+            }
+            pduConfigs.indices.forEach { i ->
+                item {
+                    PduCard(
+                        index = i,
+                        config = pduConfigs[i],
+                        canDelete = pduConfigs.size > 1,
+                        onUpdate = { updated ->
+                            pduConfigs = pduConfigs.toMutableList().also { it[i] = updated }
+                            savePdus()
+                        },
+                        onDelete = {
+                            pduConfigs = pduConfigs.toMutableList().also { it.removeAt(i) }
+                            savePdus()
+                        },
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+            item {
+                OutlinedButton(
+                    onClick = {
+                        pduConfigs = pduConfigs + PduConfig("W", emptySet())
+                        savePdus()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.addNotification))
+                }
+            }
+
+            // Workarounds
+            item {
+                Spacer(Modifier.height(4.dp))
+                SectionHeader(stringResource(R.string.workarounds))
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.workaroundsDesc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(stringResource(R.string.currentScalar), style = MaterialTheme.typography.labelLarge)
+                Spacer(Modifier.height(6.dp))
+                val scalarOptions = listOf("0.001×", "1×", "1000×")
+                val scalarValues = listOf(0.001f, 1f, 1000f)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    scalarOptions.forEachIndexed { i, label ->
+                        SegmentedButton(
+                            selected = currentScalar == scalarValues[i],
+                            onClick = { currentScalar = scalarValues[i]; saveWorkarounds() },
+                            shape = SegmentedButtonDefaults.itemShape(i, scalarOptions.size),
+                            label = { Text(label) },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.invertCurrent)) },
+                    supportingContent = {
+                        Text(
+                            text = stringResource(R.string.invertCurrentDesc),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = invertCurrent,
+                            onCheckedChange = { invertCurrent = it; saveWorkarounds() },
+                        )
+                    },
+                )
+            }
+
+            // Theme
+            item {
+                Spacer(Modifier.height(4.dp))
+                SectionHeader(stringResource(R.string.themeMode))
+                Spacer(Modifier.height(8.dp))
+                val modeOptions = listOf(
+                    stringResource(R.string.themeModeSystem),
+                    stringResource(R.string.themeModeLight),
+                    stringResource(R.string.themeModeDark),
+                    stringResource(R.string.themeModeOled),
+                )
+                val modeKeys = listOf("system", "light", "dark", "oled")
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    modeOptions.forEachIndexed { i, label ->
+                        SegmentedButton(
+                            selected = themeMode == modeKeys[i],
+                            onClick = {
+                                themeMode = modeKeys[i]
+                                prefs.edit().putString("themeMode", themeMode).commit()
+                                applyNightMode(themeMode)
+                            },
+                            shape = SegmentedButtonDefaults.itemShape(i, modeOptions.size),
+                            label = { Text(label) },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                SectionHeader(stringResource(R.string.themeColor))
+                Spacer(Modifier.height(8.dp))
+                val colorOptions = listOf(
+                    stringResource(R.string.themeColorAuto),
+                    stringResource(R.string.themeColorCustom),
+                )
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    colorOptions.forEachIndexed { i, label ->
+                        SegmentedButton(
+                            selected = if (i == 0) customColorValue == -1 else customColorValue != -1,
+                            onClick = {
+                                if (i == 0) {
+                                    customColorValue = -1
+                                    prefs.edit().putInt("themeColorValue", -1).commit()
+                                } else {
+                                    val color = if (customColorValue != -1) customColorValue else colorSwatches[11]
+                                    customColorValue = color
+                                    prefs.edit().putInt("themeColorValue", color).commit()
+                                }
+                            },
+                            shape = SegmentedButtonDefaults.itemShape(i, colorOptions.size),
+                            label = { Text(label) },
+                        )
+                    }
+                }
+                AnimatedVisibility(
+                    visible = customColorValue != -1,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut(),
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+                        ColorSwatchPicker(
+                            selectedColor = customColorValue.takeIf { it != -1 },
+                            onColorSelected = { color ->
+                                customColorValue = color
+                                prefs.edit().putInt("themeColorValue", color).commit()
+                            },
+                        )
+                    }
+                }
+            }
+
+            item { Spacer(Modifier.height(16.dp)) }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PduCard(
+    index: Int,
+    config: PduConfig,
+    canDelete: Boolean,
+    onUpdate: (PduConfig) -> Unit,
+    onDelete: () -> Unit,
+) {
+    val metricLabels = listOf("W", "A", "Ah", "°C", "V", "Wh", "%")
+    val metricKeys   = listOf("W", "A", "Ah", "C",  "V", "Wh", "%")
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Notification ${index + 1}", style = MaterialTheme.typography.titleSmall)
+                if (canDelete) {
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            painter = painterResource(R.drawable.ico_remove),
+                            contentDescription = "Remove",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            }
+            Text(stringResource(R.string.notificationIcon), style = MaterialTheme.typography.labelLarge)
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                metricKeys.forEachIndexed { i, key ->
+                    SegmentedButton(
+                        selected = config.iconMetric == key,
+                        onClick = { onUpdate(config.copy(iconMetric = key)) },
+                        shape = SegmentedButtonDefaults.itemShape(i, metricKeys.size),
+                        label = { Text(metricLabels[i]) },
+                    )
+                }
+            }
+            Text(stringResource(R.string.notificationBody), style = MaterialTheme.typography.labelLarge)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                metricKeys.forEachIndexed { i, key ->
+                    FilterChip(
+                        selected = key in config.bodyEntries,
+                        onClick = {
+                            onUpdate(config.copy(bodyEntries =
+                                if (key in config.bodyEntries) config.bodyEntries - key
+                                else config.bodyEntries + key
+                            ))
+                        },
+                        label = { Text(metricLabels[i]) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+    )
+}
+
+private val colorSwatches = listOf(
+    0xFFB3261E, 0xFFC94B0C, 0xFFF0A500,
+    0xFF386A20, 0xFF00696B, 0xFF0061A4,
+    0xFF5F4AA6, 0xFFB5006D, 0xFF9C4046,
+    0xFF795548, 0xFF546E7A, 0xFF0080FF,
+).map { it.toInt() }
+
+@Composable
+private fun ColorSwatchPicker(selectedColor: Int?, onColorSelected: (Int) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        colorSwatches.chunked(6).forEach { row ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                row.forEach { color ->
+                    ColorSwatch(color, selected = selectedColor == color) { onColorSelected(color) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColorSwatch(color: Int, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .background(if (selected) MaterialTheme.colorScheme.onSurface else Color.Transparent)
+            .padding(if (selected) 2.5.dp else 0.dp)
+            .clip(CircleShape)
+            .background(Color(color))
+            .clickable(onClick = onClick),
+    )
+}

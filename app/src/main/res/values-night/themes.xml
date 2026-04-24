@@ -2,11 +2,11 @@
     <color name="background">#121212</color>
     <color name="foreground">#e0e0e0</color>
     <color name="foreground_strong">#ffffff</color>
-    <style name="Theme.Wattz" parent="android:Theme.DeviceDefault.NoActionBar">
-        <item name="android:statusBarColor">@color/primary_variant</item>
+    <style name="Theme.Wattz" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/text_on_primary</item>
+        <item name="android:statusBarColor">?attr/colorPrimary</item>
         <item name="android:textSize">@dimen/text_size</item>
-        <item name="android:colorAccent">@color/primary</item>
-        <item name="android:colorControlActivated">@color/primary</item><!-- samsung, dark mode -->
         <item name="android:textColor">@color/foreground</item>
         <item name="android:windowBackground">@color/background</item>
     </style>

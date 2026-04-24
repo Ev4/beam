@@ -1,4 +1,5 @@
 <resources>
+    <color name="oled_black">#000000</color>
     <color name="primary">#0080ff</color>
     <color name="primary_variant">#005cbc</color>
     <color name="text_on_primary">#ffffff</color>

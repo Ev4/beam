@@ -1,0 +1,21 @@
+package dubrowgn.wattz
+
+import android.app.Application
+import androidx.appcompat.app.AppCompatDelegate
+
+class WattzApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        applyNightMode(getSharedPreferences(settingsName, MODE_PRIVATE).getString("themeMode", "system"))
+    }
+}
+
+fun applyNightMode(mode: String?) {
+    AppCompatDelegate.setDefaultNightMode(
+        when (mode) {
+            "light" -> AppCompatDelegate.MODE_NIGHT_NO
+            "dark", "oled" -> AppCompatDelegate.MODE_NIGHT_YES
+            else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        }
+    )
+}
