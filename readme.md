@@ -28,7 +28,21 @@ Beam displays live battery metrics as a persistent status bar notification and s
 
 ## Screenshots
 
+<<<<<<< HEAD
 <img src="readme/home.png" alt="Home Screen" width="32%" /> <img src="readme/notification.png" alt="Notification" width="32%" /> <img src="readme/settings.png" alt="Settings" width="32%" />
+=======
+**Home Screen**
+
+<img src="readme/home.png" alt="Home Screen" width="360" />
+
+**Notification**
+
+<img src="readme/notification.png" alt="Notification" width="360" />
+
+**Settings View**
+
+<img src="readme/settings.png" alt="Settings View" width="360" />
+>>>>>>> 9e10ad31e1e25ff9b5030dff19f6ab07cdb04a8c
 
 ## FAQ
 
