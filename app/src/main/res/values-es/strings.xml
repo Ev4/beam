@@ -10,10 +10,6 @@
     <string name="fullyCharged">Completamente cargado</string>
     <string name="indeterminate">-</string>
     <string name="statusBarIndicator">Indicador de barra de estado</string>
-    <string name="notifications">Notificaciones</string>
-    <string name="notificationIcon">Icono</string>
-    <string name="notificationBody">Cuerpo</string>
-    <string name="addNotification">Agregar notificación</string>
     <string name="no">No</string>
     <string name="power">Potencia</string>
     <string name="settings">Ajustes</string>

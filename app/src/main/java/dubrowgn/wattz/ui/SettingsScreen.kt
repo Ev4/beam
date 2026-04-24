@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -32,7 +31,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -45,7 +43,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -56,11 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import dubrowgn.wattz.BatteryViewModel
-import dubrowgn.wattz.PduConfig
 import dubrowgn.wattz.R
 import dubrowgn.wattz.applyNightMode
-import dubrowgn.wattz.parsePduList
-import dubrowgn.wattz.serializePduList
 import dubrowgn.wattz.settingsName
 import dubrowgn.wattz.settingsUpdateInd
 
@@ -71,22 +65,16 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences(settingsName, Context.MODE_PRIVATE) }
 
-    var pduConfigs by remember {
-        val raw = prefs.getString("pduList", null)
-        val initial = if (raw != null) parsePduList(raw) else {
-            val old = prefs.getStringSet("indicatorEntries", null)
-                ?.filter { it != "W" }?.toSet() ?: emptySet()
-            listOf(PduConfig("W", old))
-        }
-        mutableStateOf(initial)
+    var indicatorEntries by remember {
+        mutableStateOf(prefs.getStringSet("indicatorEntries", null) ?: emptySet())
     }
     var currentScalar by remember { mutableFloatStateOf(prefs.getFloat("currentScalar", 1f)) }
     var invertCurrent by remember { mutableStateOf(prefs.getBoolean("invertCurrent", false)) }
     var themeMode by remember { mutableStateOf(prefs.getString("themeMode", "system") ?: "system") }
-    var customColorValue by remember { mutableIntStateOf(prefs.getInt("themeColorValue", -1)) }
+    var customColorValue by remember { mutableIntStateOf(prefs.getInt("themeColorValue", colorSwatches[6])) }
 
-    fun savePdus() {
-        prefs.edit().putString("pduList", serializePduList(pduConfigs)).commit()
+    fun saveIndicatorEntries() {
+        prefs.edit().putStringSet("indicatorEntries", indicatorEntries).commit()
         context.sendBroadcast(Intent().setPackage(context.packageName).setAction(settingsUpdateInd))
     }
 
@@ -127,7 +115,7 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
 
             // Live preview
             item {
-                Card(modifier = Modifier.fillMaxWidth()) {
+                androidx.compose.material3.Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(stringResource(R.string.charging), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -142,82 +130,27 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
                 }
             }
 
-            // Notifications (PDUs)
+            // Status Bar Indicator
             item {
-                SectionHeader(stringResource(R.string.notifications))
+                SectionHeader(stringResource(R.string.statusBarIndicator))
                 Spacer(Modifier.height(8.dp))
-            }
-            pduConfigs.indices.forEach { i ->
-                item {
-                    PduCard(
-                        index = i,
-                        config = pduConfigs[i],
-                        canDelete = pduConfigs.size > 1,
-                        onUpdate = { updated ->
-                            pduConfigs = pduConfigs.toMutableList().also { it[i] = updated }
-                            savePdus()
-                        },
-                        onDelete = {
-                            pduConfigs = pduConfigs.toMutableList().also { it.removeAt(i) }
-                            savePdus()
-                        },
-                    )
-                    Spacer(Modifier.height(8.dp))
-                }
-            }
-            item {
-                OutlinedButton(
-                    onClick = {
-                        pduConfigs = pduConfigs + PduConfig("W", emptySet())
-                        savePdus()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(R.string.addNotification))
-                }
-            }
-
-            // Workarounds
-            item {
-                Spacer(Modifier.height(4.dp))
-                SectionHeader(stringResource(R.string.workarounds))
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.workaroundsDesc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(12.dp))
-                Text(stringResource(R.string.currentScalar), style = MaterialTheme.typography.labelLarge)
-                Spacer(Modifier.height(6.dp))
-                val scalarOptions = listOf("0.001×", "1×", "1000×")
-                val scalarValues = listOf(0.001f, 1f, 1000f)
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    scalarOptions.forEachIndexed { i, label ->
-                        SegmentedButton(
-                            selected = currentScalar == scalarValues[i],
-                            onClick = { currentScalar = scalarValues[i]; saveWorkarounds() },
-                            shape = SegmentedButtonDefaults.itemShape(i, scalarOptions.size),
-                            label = { Text(label) },
+                val metricLabels = listOf("A", "Ah", "°C", "V", "Wh", "%")
+                val metricKeys   = listOf("A", "Ah", "C",  "V", "Wh", "%")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    metricKeys.forEachIndexed { i, key ->
+                        FilterChip(
+                            selected = key in indicatorEntries,
+                            onClick = {
+                                indicatorEntries = if (key in indicatorEntries)
+                                    indicatorEntries - key
+                                else
+                                    indicatorEntries + key
+                                saveIndicatorEntries()
+                            },
+                            label = { Text(metricLabels[i]) },
                         )
                     }
                 }
-                Spacer(Modifier.height(4.dp))
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.invertCurrent)) },
-                    supportingContent = {
-                        Text(
-                            text = stringResource(R.string.invertCurrentDesc),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    },
-                    trailingContent = {
-                        Switch(
-                            checked = invertCurrent,
-                            onCheckedChange = { invertCurrent = it; saveWorkarounds() },
-                        )
-                    },
-                )
             }
 
             // Theme
@@ -289,70 +222,50 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
                 }
             }
 
-            item { Spacer(Modifier.height(16.dp)) }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PduCard(
-    index: Int,
-    config: PduConfig,
-    canDelete: Boolean,
-    onUpdate: (PduConfig) -> Unit,
-    onDelete: () -> Unit,
-) {
-    val metricLabels = listOf("W", "A", "Ah", "°C", "V", "Wh", "%")
-    val metricKeys   = listOf("W", "A", "Ah", "C",  "V", "Wh", "%")
-
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Notification ${index + 1}", style = MaterialTheme.typography.titleSmall)
-                if (canDelete) {
-                    IconButton(onClick = onDelete) {
-                        Icon(
-                            painter = painterResource(R.drawable.ico_remove),
-                            contentDescription = "Remove",
-                            tint = MaterialTheme.colorScheme.onSurface,
+            // Workarounds
+            item {
+                Spacer(Modifier.height(4.dp))
+                SectionHeader(stringResource(R.string.workarounds))
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.workaroundsDesc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(stringResource(R.string.currentScalar), style = MaterialTheme.typography.labelLarge)
+                Spacer(Modifier.height(6.dp))
+                val scalarOptions = listOf("0.001×", "1×", "1000×")
+                val scalarValues = listOf(0.001f, 1f, 1000f)
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    scalarOptions.forEachIndexed { i, label ->
+                        SegmentedButton(
+                            selected = currentScalar == scalarValues[i],
+                            onClick = { currentScalar = scalarValues[i]; saveWorkarounds() },
+                            shape = SegmentedButtonDefaults.itemShape(i, scalarOptions.size),
+                            label = { Text(label) },
                         )
                     }
                 }
+                Spacer(Modifier.height(4.dp))
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.invertCurrent)) },
+                    supportingContent = {
+                        Text(
+                            text = stringResource(R.string.invertCurrentDesc),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = invertCurrent,
+                            onCheckedChange = { invertCurrent = it; saveWorkarounds() },
+                        )
+                    },
+                )
             }
-            Text(stringResource(R.string.notificationIcon), style = MaterialTheme.typography.labelLarge)
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                metricKeys.forEachIndexed { i, key ->
-                    SegmentedButton(
-                        selected = config.iconMetric == key,
-                        onClick = { onUpdate(config.copy(iconMetric = key)) },
-                        shape = SegmentedButtonDefaults.itemShape(i, metricKeys.size),
-                        label = { Text(metricLabels[i]) },
-                    )
-                }
-            }
-            Text(stringResource(R.string.notificationBody), style = MaterialTheme.typography.labelLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                metricKeys.forEachIndexed { i, key ->
-                    FilterChip(
-                        selected = key in config.bodyEntries,
-                        onClick = {
-                            onUpdate(config.copy(bodyEntries =
-                                if (key in config.bodyEntries) config.bodyEntries - key
-                                else config.bodyEntries + key
-                            ))
-                        },
-                        label = { Text(metricLabels[i]) },
-                    )
-                }
-            }
+
+            item { Spacer(Modifier.height(16.dp)) }
         }
     }
 }

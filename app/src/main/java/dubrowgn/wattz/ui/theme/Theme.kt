@@ -89,7 +89,7 @@ fun rememberThemePrefs(): State<ThemePrefs> {
         val p = context.getSharedPreferences(settingsName, android.content.Context.MODE_PRIVATE)
         return ThemePrefs(
             mode = p.getString("themeMode", "system") ?: "system",
-            customColor = p.getInt("themeColorValue", -1).takeIf { it != -1 },
+            customColor = p.getInt("themeColorValue", 0xFF5F4AA6.toInt()).takeIf { it != -1 },
         )
     }
 

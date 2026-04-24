@@ -10,10 +10,6 @@
     <string name="fullyCharged">fully charged</string>
     <string name="indeterminate">-</string>
     <string name="statusBarIndicator">Status Bar Indicator</string>
-    <string name="notifications">Notifications</string>
-    <string name="notificationIcon">Icon</string>
-    <string name="notificationBody">Body</string>
-    <string name="addNotification">Add Notification</string>
     <string name="no">no</string>
     <string name="power">Power</string>
     <string name="settings">Settings</string>
