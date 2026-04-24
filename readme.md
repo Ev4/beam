@@ -4,9 +4,9 @@
 persistent notifications in your status bar, and shows a full breakdown of
 battery metrics in-app.
 
-You can configure multiple independent notifications, each with its own icon
-metric and optional body entries. Notification permissions are required;
-open the app once to grant them and start the monitor service automatically.
+You can configure which additional metrics appear in the notification body.
+Notification permissions are required; open the app once to grant them and
+start the monitor service automatically.
 
 This app respects your privacy!
 * No unnecessary permissions
@@ -25,8 +25,7 @@ Detailed battery metrics include:
 * Charging Since (date/time)
 * Time to Full Charge (duration)
 
-Each persistent notification is independently configurable:
-* Icon metric — any of the above metrics displayed in the notification icon
+The persistent notification is configurable:
 * Body entries — additional metrics shown in the notification body
 
 ## Screenshots
@@ -35,9 +34,9 @@ Each persistent notification is independently configurable:
 
 <img src="readme/home.png" alt="Home Screen" width="360" />
 
-**App View**
+**Notification**
 
-<img src="readme/main.png" alt="Main View" width="360" />
+<img src="readme/notification.png" alt="Notification" width="360" />
 
 **Settings View**
 
