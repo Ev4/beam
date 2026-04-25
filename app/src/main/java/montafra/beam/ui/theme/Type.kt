@@ -1,4 +1,4 @@
-package dubrowgn.wattz.ui.theme
+package montafra.beam.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

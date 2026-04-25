@@ -7,7 +7,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "dubrowgn.wattz"
+        applicationId = "montafra.beam"
         minSdk = 28 // BatteryManager.computeChargeTimeRemaining()
         // work around unused library resources
         resourceConfigurations.addAll(listOf("anydpi", "en", "es"))
@@ -37,7 +37,7 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-    namespace = "dubrowgn.wattz"
+    namespace = "montafra.beam"
 }
 
 dependencies {

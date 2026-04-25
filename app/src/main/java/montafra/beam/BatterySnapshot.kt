@@ -1,4 +1,4 @@
-package dubrowgn.wattz
+package montafra.beam
 
 
 class BatterySnapshot(
@@ -34,7 +34,6 @@ class BatterySnapshot(
     val millivolts : Double? get() = voltsRaw?.toDouble()
     val volts : Double? get() = fromMillis(millivolts)
 
-    val milliwatts : Double? get() = milliamps.times(volts)
     val watts : Double? get() = amps.times(volts)
 
     val energyAmpHours : Double? get() = fromMicros(energyRaw?.toDouble())

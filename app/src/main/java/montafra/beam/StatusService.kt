@@ -1,4 +1,4 @@
-package dubrowgn.wattz
+package montafra.beam
 
 import android.app.*
 import android.content.BroadcastReceiver
@@ -15,9 +15,21 @@ import java.time.format.DateTimeFormatter
 
 
 class StatusService : Service() {
+    companion object {
+        private val dateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    }
+
     private lateinit var battery: Battery
-    private val dateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    private var iconBitmap: Bitmap? = null
+    private val iconPaint = Paint().apply {
+        typeface = Typeface.DEFAULT_BOLD
+        style = Paint.Style.FILL
+        color = Color.WHITE
+        textAlign = Paint.Align.CENTER
+    }
     private var indicatorEntries: Set<String> = emptySet()
+    private var initialized = false
+    private lateinit var msgReceiver: MsgReceiver
     private val metricOrder = listOf("A", "Ah", "C", "V", "Wh", "%")
     private lateinit var noteIntent: PendingIntent
     private lateinit var noteMgr: NotificationManager
@@ -80,6 +92,9 @@ class StatusService : Service() {
     private fun metricUnit(key: String) = if (key == "C") "°C" else key
 
     private fun init() {
+        if (initialized) return
+        initialized = true
+
         battery = Battery(applicationContext)
         snapshot = battery.snapshot()
 
@@ -103,8 +118,9 @@ class StatusService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        msgReceiver = MsgReceiver()
         registerReceiver(
-            MsgReceiver(),
+            msgReceiver,
             IntentFilter().apply {
                 addAction(batteryDataReq)
                 addAction(settingsUpdateInd)
@@ -137,6 +153,8 @@ class StatusService : Service() {
 
     override fun onDestroy() {
         debug("onDestroy()")
+        task.stop()
+        if (initialized) unregisterReceiver(msgReceiver)
         super.onDestroy()
     }
 
@@ -147,24 +165,20 @@ class StatusService : Service() {
     private fun renderIcon(value: String, unit: String): Icon {
         val density = resources.displayMetrics.density
         val w = (48f * density).toInt()
-        val bitmap = Bitmap.createBitmap(w, w, Bitmap.Config.ALPHA_8)
+        val bitmap = iconBitmap?.takeIf { it.width == w } ?: run {
+            Bitmap.createBitmap(w, w, Bitmap.Config.ALPHA_8).also { iconBitmap = it }
+        }
+        bitmap.eraseColor(Color.TRANSPARENT)
         val canvas = Canvas(bitmap)
 
-        val paint = Paint().apply {
-            typeface = Typeface.DEFAULT_BOLD
-            style = Paint.Style.FILL
-            color = Color.WHITE
-            textAlign = Paint.Align.CENTER
-        }
-
         val maxWidth = w * 0.92f
-        paint.textSize = 40f * density
-        val measured = paint.measureText(value)
-        if (measured > maxWidth) paint.textSize *= maxWidth / measured
-        canvas.drawText(value, w / 2f, w * 0.62f, paint)
+        iconPaint.textSize = 40f * density
+        val measured = iconPaint.measureText(value)
+        if (measured > maxWidth) iconPaint.textSize *= maxWidth / measured
+        canvas.drawText(value, w / 2f, w * 0.62f, iconPaint)
 
-        paint.textSize = 18f * density
-        canvas.drawText(unit, w / 2f, w * 0.94f, paint)
+        iconPaint.textSize = 18f * density
+        canvas.drawText(unit, w / 2f, w * 0.94f, iconPaint)
 
         return Icon.createWithBitmap(bitmap)
     }

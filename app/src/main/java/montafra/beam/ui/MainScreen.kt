@@ -1,4 +1,4 @@
-package dubrowgn.wattz.ui
+package montafra.beam.ui
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -15,6 +15,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,9 +63,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import dubrowgn.wattz.BatteryData
-import dubrowgn.wattz.BatteryViewModel
-import dubrowgn.wattz.R
+import montafra.beam.BatteryData
+import montafra.beam.BatteryViewModel
+import montafra.beam.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,10 +105,40 @@ fun MainScreen(navController: NavController, vm: BatteryViewModel = viewModel())
     var heroCenter by remember { mutableStateOf(Offset.Zero) }
     var heroMinDim by remember { mutableFloatStateOf(0f) }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().background(background)) {
+        if (heroMinDim > 0f) {
+            Canvas(Modifier.fillMaxSize()) {
+                rotate(rot1, pivot = heroCenter) {
+                    val r = heroMinDim * 0.68f
+                    drawArc(
+                        color = primary.copy(alpha = 0.16f),
+                        startAngle = -20f, sweepAngle = 190f, useCenter = false,
+                        topLeft = Offset(heroCenter.x - r, heroCenter.y - r), size = Size(r * 2, r * 2),
+                        style = Stroke(width = 7.dp.toPx(), cap = StrokeCap.Round),
+                    )
+                }
+                rotate(rot2, pivot = heroCenter) {
+                    val r = heroMinDim * 0.50f
+                    drawArc(
+                        color = primary.copy(alpha = 0.22f),
+                        startAngle = 45f, sweepAngle = 130f, useCenter = false,
+                        topLeft = Offset(heroCenter.x - r, heroCenter.y - r), size = Size(r * 2, r * 2),
+                        style = Stroke(width = 13.dp.toPx(), cap = StrokeCap.Round),
+                    )
+                }
+                rotate(rot3, pivot = heroCenter) {
+                    val r = heroMinDim * 0.32f
+                    drawArc(
+                        color = primary.copy(alpha = 0.25f + 0.20f * pulse),
+                        startAngle = 90f, sweepAngle = 70f, useCenter = false,
+                        topLeft = Offset(heroCenter.x - r, heroCenter.y - r), size = Size(r * 2, r * 2),
+                        style = Stroke(width = 20.dp.toPx(), cap = StrokeCap.Round),
+                    )
+                }
+            }
+        }
         Scaffold(
             modifier = Modifier.drawBehind {
-                drawRect(background)
                 drawRect(
                     brush = Brush.radialGradient(
                         listOf(primary.copy(alpha = 0.04f + 0.06f * glowPulse), Color.Transparent),
@@ -173,37 +204,6 @@ fun MainScreen(navController: NavController, vm: BatteryViewModel = viewModel())
                 item { Spacer(Modifier.height(16.dp)) }
             }
         }
-        if (heroMinDim > 0f) {
-            Canvas(Modifier.fillMaxSize()) {
-                rotate(rot1, pivot = heroCenter) {
-                    val r = heroMinDim * 0.68f
-                    drawArc(
-                        color = primary.copy(alpha = 0.16f),
-                        startAngle = -20f, sweepAngle = 190f, useCenter = false,
-                        topLeft = Offset(heroCenter.x - r, heroCenter.y - r), size = Size(r * 2, r * 2),
-                        style = Stroke(width = 7.dp.toPx(), cap = StrokeCap.Round),
-                    )
-                }
-                rotate(rot2, pivot = heroCenter) {
-                    val r = heroMinDim * 0.50f
-                    drawArc(
-                        color = primary.copy(alpha = 0.22f),
-                        startAngle = 45f, sweepAngle = 130f, useCenter = false,
-                        topLeft = Offset(heroCenter.x - r, heroCenter.y - r), size = Size(r * 2, r * 2),
-                        style = Stroke(width = 13.dp.toPx(), cap = StrokeCap.Round),
-                    )
-                }
-                rotate(rot3, pivot = heroCenter) {
-                    val r = heroMinDim * 0.32f
-                    drawArc(
-                        color = primary.copy(alpha = 0.25f + 0.20f * pulse),
-                        startAngle = 90f, sweepAngle = 70f, useCenter = false,
-                        topLeft = Offset(heroCenter.x - r, heroCenter.y - r), size = Size(r * 2, r * 2),
-                        style = Stroke(width = 20.dp.toPx(), cap = StrokeCap.Round),
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -237,25 +237,27 @@ private fun HeroCard(
             modifier = Modifier.fillMaxWidth().padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            AnimatedContent(
-                targetState = data.power,
-                transitionSpec = {
-                    (fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.94f))
-                        .togetherWith(fadeOut(tween(200)))
-                },
-                label = "power-value",
-            ) { value ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AnimatedContent(
+                    targetState = data.power.removeSuffix("W"),
+                    transitionSpec = {
+                        (fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.94f))
+                            .togetherWith(fadeOut(tween(200)))
+                    },
+                    label = "power-value",
+                ) { value ->
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.displayLarge,
+                        color = onBackground,
+                    )
+                }
                 Text(
-                    text = value,
+                    text = "W",
                     style = MaterialTheme.typography.displayLarge,
                     color = onBackground,
                 )
             }
-            Text(
-                text = "W",
-                style = MaterialTheme.typography.titleMedium,
-                color = onBackground.copy(alpha = 0.6f),
-            )
             Spacer(Modifier.height(20.dp))
             LinearProgressIndicator(
                 progress = { animatedProgress },

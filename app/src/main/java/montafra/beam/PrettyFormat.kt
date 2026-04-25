@@ -1,4 +1,4 @@
-package dubrowgn.wattz
+package montafra.beam
 
 import java.util.Locale
 import kotlin.math.absoluteValue
