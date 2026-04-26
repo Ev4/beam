@@ -1,4 +1,4 @@
-package dubrowgn.wattz.ui
+package montafra.beam.ui
 
 import android.content.Context
 import android.content.Intent
@@ -52,11 +52,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import dubrowgn.wattz.BatteryViewModel
-import dubrowgn.wattz.R
-import dubrowgn.wattz.applyNightMode
-import dubrowgn.wattz.settingsName
-import dubrowgn.wattz.settingsUpdateInd
+import montafra.beam.BatteryViewModel
+import montafra.beam.R
+import montafra.beam.applyNightMode
+import montafra.beam.settingsName
+import montafra.beam.settingsUpdateInd
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

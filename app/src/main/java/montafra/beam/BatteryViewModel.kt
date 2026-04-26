@@ -1,4 +1,4 @@
-package dubrowgn.wattz
+package montafra.beam
 
 import android.app.Application
 import android.content.BroadcastReceiver

@@ -1,9 +1,9 @@
-package dubrowgn.wattz
+package montafra.beam
 
 import android.app.Application
 import androidx.appcompat.app.AppCompatDelegate
 
-class WattzApplication : Application() {
+class BeamApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         applyNightMode(getSharedPreferences(settingsName, MODE_PRIVATE).getString("themeMode", "system"))

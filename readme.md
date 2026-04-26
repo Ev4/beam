@@ -1,59 +1,51 @@
 # Beam
 
-*Beam* is a real-time battery monitor. It displays live battery metrics as
-persistent notifications in your status bar, and shows a full breakdown of
-battery metrics in-app.
 
-You can configure which additional metrics appear in the notification body.
-Notification permissions are required; open the app once to grant them and
-start the monitor service automatically.
+*Real-time battery monitor for Android.*
 
-This app respects your privacy!
-* No unnecessary permissions
-* No ads
-* No collection of user data of any kind
-* No sharing data with third parties
+Beam displays live battery metrics as a persistent status bar notification and shows a full breakdown in-app. You can choose which additional metrics appear in the notification body.
 
-Detailed battery metrics include:
-* Power (watts)
-* Current (amps)
-* Voltage (volts)
-* Energy Level (watt-hours and amp-hours)
-* Temperature (celsius)
-* Charge Level (percent)
-* Is Charging (yes/no)
-* Charging Since (date/time)
-* Time to Full Charge (duration)
+## Metrics
 
-The persistent notification is configurable:
-* Body entries — additional metrics shown in the notification body
+- Power (watts)
+- Current (amps)
+- Voltage (volts)
+- Energy level (watt-hours and amp-hours)
+- Temperature (celsius)
+- Charge level (percent)
+- Is charging (yes/no)
+- Charging since (date/time)
+- Time to full charge (duration)
+
+## Privacy
+
+- No unnecessary permissions
+- No ads
+- No collection of user data of any kind
+- No sharing data with third parties
 
 ## Screenshots
 
-**Status Bar**
-
-<img src="readme/home.png" alt="Home Screen" width="360" />
-
-**Notification**
-
-<img src="readme/notification.png" alt="Notification" width="360" />
-
-**Settings View**
-
-<img src="readme/settings.png" alt="Settings View" width="360" />
+<img src="readme/home.png" alt="Home Screen" width="32%" /> <img src="readme/notification.png" alt="Notification" width="32%" /> <img src="readme/settings.png" alt="Settings" width="32%" />
 
 ## FAQ
 
-1. Why does my phone always show `0W`?
+**Why does my phone always show `0W`?**
 
-    Many phones, especially Samsungs, don't follow the BatteryManager spec. Try changing "Power Scalar Workaround" in the settings view.
+Many phones, especially Samsungs, don't follow the BatteryManager spec. Try changing "Power Scalar Workaround" in the settings view.
 
-2. Why does my external power meter show different power numbers than *Beam*?
+**Why does my external power meter show different numbers than Beam?**
 
-    *Beam* can only measure power coming into or out of the battery management system. Your external meter is measuring this plus any power your phone is using in addition to that.
+Beam can only measure power flowing into or out of the battery management system. An external meter also captures power the phone draws on top of that.
 
-3. Why isn't the indicator showing up in my status bar?
+**Why isn't the indicator showing up in my status bar?**
 
-    *Beam* needs notification permissions on newer Android phones in order to show the indicator. Make sure to open *Beam* at least once, where it should prompt you to grant it permissions. Otherwise, check the Android app settings to ensure *Beam* has notification permissions.
+Beam needs notification permissions on newer Android phones. Open the app once and grant permissions when prompted, or enable them manually in Android app settings. Note that Android can silently revoke these permissions, so you may need to re-enable them periodically.
 
-    Keep in mind, Android can revoke these permissions at any time without telling you, so you may need to re-enable them periodically.
+## Support Me
+
+**BTC:** sp1qqfzps48q94usuqwhfcp082kg3pphr9zyh32cg4h4q84rvr6pa3d6vq56w3trm5cs5rgw5g3wcravusunh39utwfy9p2fe7e4g774r66rwcagqpmy
+
+**XMR:** 876wwukGWhU9H6qez4Qmt5gTBBmdKzoDg3zvT33QCwjy9e7jS7MVjQySUCpNhoVrFcF15AicUJ4VaVrTKAXGMu5D7yUbqFs
+
+**Lighting:** monta@cake.cash

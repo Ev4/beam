@@ -1,4 +1,4 @@
-package dubrowgn.wattz
+package montafra.beam
 
 import android.Manifest.permission
 import android.app.ActivityManager
@@ -16,12 +16,12 @@ import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import dubrowgn.wattz.ui.MainScreen
-import dubrowgn.wattz.ui.SettingsScreen
-import dubrowgn.wattz.ui.theme.WattzTheme
-import dubrowgn.wattz.ui.theme.rememberThemePrefs
+import montafra.beam.ui.MainScreen
+import montafra.beam.ui.SettingsScreen
+import montafra.beam.ui.theme.BeamTheme
+import montafra.beam.ui.theme.rememberThemePrefs
 
-const val namespace = "dubrowgn.wattz"
+const val namespace = "montafra.beam"
 const val batteryDataReq = "$namespace.battery-data-req"
 const val batteryDataResp = "$namespace.battery-data-resp"
 const val intervalMs = 1_250L
@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val themePrefs by rememberThemePrefs()
-            WattzTheme(themePrefs) {
+            BeamTheme(themePrefs) {
                 val navController = rememberNavController()
                 NavHost(
                     navController = navController,

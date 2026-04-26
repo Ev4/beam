@@ -1,4 +1,4 @@
-package dubrowgn.wattz.ui.theme
+package montafra.beam.ui.theme
 
 import android.app.Activity
 import android.content.Context
@@ -23,7 +23,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import dubrowgn.wattz.settingsName
+import montafra.beam.settingsName
 
 data class ThemePrefs(val mode: String = "system", val customColor: Int? = null)
 
@@ -108,7 +108,7 @@ fun rememberThemePrefs(): State<ThemePrefs> {
 }
 
 @Composable
-fun WattzTheme(prefs: ThemePrefs, content: @Composable () -> Unit) {
+fun BeamTheme(prefs: ThemePrefs, content: @Composable () -> Unit) {
     val context = LocalContext.current
     val useDark = when (prefs.mode) {
         "light" -> false

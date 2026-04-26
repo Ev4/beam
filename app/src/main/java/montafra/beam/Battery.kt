@@ -1,4 +1,4 @@
-package dubrowgn.wattz
+package montafra.beam
 
 import android.app.Activity
 import android.content.Context
@@ -42,8 +42,7 @@ class Battery(private val ctx: Context) {
         return v
     }
 
-    private fun prop(id: String): Long? {
-        val intent = ctx.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+    private fun prop(id: String, intent: Intent?): Long? {
         if (intent?.hasExtra(id) != true)
             return null
 
@@ -55,8 +54,9 @@ class Battery(private val ctx: Context) {
     }
 
     fun snapshot(): BatterySnapshot {
-        val levelScale = prop(BatteryManager.EXTRA_SCALE)?.toDouble()
-        val level = prop(BatteryManager.EXTRA_LEVEL)?.toDouble()
+        val batteryIntent = ctx.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val levelScale = prop(BatteryManager.EXTRA_SCALE, batteryIntent)?.toDouble()
+        val level = prop(BatteryManager.EXTRA_LEVEL, batteryIntent)?.toDouble()
 
         return BatterySnapshot(
             chargeTimeRemainingRaw = mgr.computeChargeTimeRemaining(),
@@ -66,9 +66,9 @@ class Battery(private val ctx: Context) {
             level = level.div(levelScale),
             invertCurrent = invertCurrent,
             isChargingRaw = mgr.isCharging,
-            plugType = PlugType.fromRaw(prop(BatteryManager.EXTRA_PLUGGED)?.toInt()),
-            tempRaw = prop(BatteryManager.EXTRA_TEMPERATURE),
-            voltsRaw = prop(BatteryManager.EXTRA_VOLTAGE),
+            plugType = PlugType.fromRaw(prop(BatteryManager.EXTRA_PLUGGED, batteryIntent)?.toInt()),
+            tempRaw = prop(BatteryManager.EXTRA_TEMPERATURE, batteryIntent),
+            voltsRaw = prop(BatteryManager.EXTRA_VOLTAGE, batteryIntent),
         )
     }
 }

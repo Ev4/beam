@@ -1,4 +1,4 @@
-package dubrowgn.wattz
+package montafra.beam
 
 fun Double?.div(v: Double?) : Double? {
     if (v == null)
