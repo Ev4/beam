@@ -8,10 +8,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -71,10 +73,22 @@ class MainActivity : ComponentActivity() {
                 NavHost(
                     navController = navController,
                     startDestination = "main",
-                    enterTransition = { slideInHorizontally { it } + fadeIn() },
-                    exitTransition = { slideOutHorizontally { -it } + fadeOut() },
-                    popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
-                    popExitTransition = { slideOutHorizontally { it } + fadeOut() },
+                    enterTransition = {
+                        fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)) +
+                            scaleIn(initialScale = 0.92f, animationSpec = tween(300, easing = FastOutSlowInEasing))
+                    },
+                    exitTransition = {
+                        fadeOut(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
+                            scaleOut(targetScale = 1.10f, animationSpec = tween(250, easing = FastOutSlowInEasing))
+                    },
+                    popEnterTransition = {
+                        fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)) +
+                            scaleIn(initialScale = 1.10f, animationSpec = tween(300, easing = FastOutSlowInEasing))
+                    },
+                    popExitTransition = {
+                        fadeOut(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
+                            scaleOut(targetScale = 0.92f, animationSpec = tween(250, easing = FastOutSlowInEasing))
+                    },
                 ) {
                     composable("main") { MainScreen(navController) }
                     composable("settings") { SettingsScreen(navController) }

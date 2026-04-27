@@ -13,7 +13,7 @@ android {
         resourceConfigurations.addAll(listOf("anydpi", "en", "es"))
         targetSdk = 34
         versionCode = 20
-        versionName = "1.20"
+        versionName = "1.0"
     }
 
     buildFeatures {
