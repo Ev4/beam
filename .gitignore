@@ -12,3 +12,4 @@
 .externalNativeBuild
 .cxx
 local.properties
+.vscode
