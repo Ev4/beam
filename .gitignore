@@ -12,3 +12,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+.vscode
+CLAUDE.md
+ai-pod.Dockerfile
