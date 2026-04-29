@@ -13,3 +13,5 @@
 .cxx
 local.properties
 .vscode
+ai-pod.Dockerfile
+CLAUDE.md
