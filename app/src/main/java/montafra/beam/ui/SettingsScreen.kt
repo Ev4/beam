@@ -46,7 +46,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -63,6 +65,7 @@ import montafra.beam.settingsUpdateInd
 fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewModel()) {
     val data by vm.data.collectAsState()
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     val prefs = remember { context.getSharedPreferences(settingsName, Context.MODE_PRIVATE) }
 
     var indicatorEntries by remember {
@@ -93,7 +96,10 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
             TopAppBar(
                 title = { Text(stringResource(R.string.settings)) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        navController.popBackStack()
+                    }) {
                         Icon(
                             painter = painterResource(R.drawable.ico_back),
                             contentDescription = stringResource(R.string.back),
@@ -113,46 +119,6 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
         ) {
             item { Spacer(Modifier.height(4.dp)) }
 
-            // Live preview
-            item {
-                androidx.compose.material3.Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(stringResource(R.string.charging), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(data.charging, style = MaterialTheme.typography.bodyLarge)
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(stringResource(R.string.power), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(data.power, style = MaterialTheme.typography.bodyLarge)
-                        }
-                    }
-                }
-            }
-
-            // Status Bar Indicator
-            item {
-                SectionHeader(stringResource(R.string.statusBarIndicator))
-                Spacer(Modifier.height(8.dp))
-                val metricLabels = listOf("A", "Ah", "°C", "V", "Wh", "%")
-                val metricKeys   = listOf("A", "Ah", "C",  "V", "Wh", "%")
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    metricKeys.forEachIndexed { i, key ->
-                        FilterChip(
-                            selected = key in indicatorEntries,
-                            onClick = {
-                                indicatorEntries = if (key in indicatorEntries)
-                                    indicatorEntries - key
-                                else
-                                    indicatorEntries + key
-                                saveIndicatorEntries()
-                            },
-                            label = { Text(metricLabels[i]) },
-                        )
-                    }
-                }
-            }
-
             // Theme
             item {
                 Spacer(Modifier.height(4.dp))
@@ -170,6 +136,7 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
                         SegmentedButton(
                             selected = themeMode == modeKeys[i],
                             onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 themeMode = modeKeys[i]
                                 prefs.edit().putString("themeMode", themeMode).commit()
                                 applyNightMode(themeMode)
@@ -191,6 +158,7 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
                         SegmentedButton(
                             selected = if (i == 0) customColorValue == -1 else customColorValue != -1,
                             onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 if (i == 0) {
                                     customColorValue = -1
                                     prefs.edit().putInt("themeColorValue", -1).commit()
@@ -222,6 +190,30 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
                 }
             }
 
+            // Status Bar Indicator
+            item {
+                SectionHeader(stringResource(R.string.statusBarIndicator))
+                Spacer(Modifier.height(8.dp))
+                val metricLabels = listOf("A", "Ah", "°C", "V", "Wh", "%")
+                val metricKeys   = listOf("A", "Ah", "C",  "V", "Wh", "%")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    metricKeys.forEachIndexed { i, key ->
+                        FilterChip(
+                            selected = key in indicatorEntries,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                indicatorEntries = if (key in indicatorEntries)
+                                    indicatorEntries - key
+                                else
+                                    indicatorEntries + key
+                                saveIndicatorEntries()
+                            },
+                            label = { Text(metricLabels[i]) },
+                        )
+                    }
+                }
+            }
+
             // Workarounds
             item {
                 Spacer(Modifier.height(4.dp))
@@ -241,7 +233,11 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
                     scalarOptions.forEachIndexed { i, label ->
                         SegmentedButton(
                             selected = currentScalar == scalarValues[i],
-                            onClick = { currentScalar = scalarValues[i]; saveWorkarounds() },
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                currentScalar = scalarValues[i]
+                                saveWorkarounds()
+                            },
                             shape = SegmentedButtonDefaults.itemShape(i, scalarOptions.size),
                             label = { Text(label) },
                         )
@@ -259,10 +255,31 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
                     trailingContent = {
                         Switch(
                             checked = invertCurrent,
-                            onCheckedChange = { invertCurrent = it; saveWorkarounds() },
+                            onCheckedChange = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                invertCurrent = it
+                                saveWorkarounds()
+                            },
                         )
                     },
                 )
+            }
+
+            // Live preview — shows effect of workaround settings
+            item {
+                androidx.compose.material3.Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(stringResource(R.string.charging), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(data.charging, style = MaterialTheme.typography.bodyLarge)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(stringResource(R.string.power), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(data.power, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
             }
 
             item { Spacer(Modifier.height(16.dp)) }
@@ -301,6 +318,7 @@ private fun ColorSwatchPicker(selectedColor: Int?, onColorSelected: (Int) -> Uni
 
 @Composable
 private fun ColorSwatch(color: Int, selected: Boolean, onClick: () -> Unit) {
+    val haptic = LocalHapticFeedback.current
     Box(
         modifier = Modifier
             .size(44.dp)
@@ -309,6 +327,9 @@ private fun ColorSwatch(color: Int, selected: Boolean, onClick: () -> Unit) {
             .padding(if (selected) 2.5.dp else 0.dp)
             .clip(CircleShape)
             .background(Color(color))
-            .clickable(onClick = onClick),
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            },
     )
 }

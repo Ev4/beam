@@ -8,10 +8,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -71,10 +72,20 @@ class MainActivity : ComponentActivity() {
                 NavHost(
                     navController = navController,
                     startDestination = "main",
-                    enterTransition = { slideInHorizontally { it } + fadeIn() },
-                    exitTransition = { slideOutHorizontally { -it } + fadeOut() },
-                    popEnterTransition = { slideInHorizontally { -it } + fadeIn() },
-                    popExitTransition = { slideOutHorizontally { it } + fadeOut() },
+                    enterTransition = {
+                        fadeIn(tween(300, easing = FastOutSlowInEasing))
+                    },
+                    exitTransition = {
+                        scaleOut(tween(300, easing = FastOutSlowInEasing), targetScale = 0.94f) +
+                            fadeOut(tween(250))
+                    },
+                    popEnterTransition = {
+                        fadeIn(tween(300, easing = FastOutSlowInEasing))
+                    },
+                    popExitTransition = {
+                        scaleOut(tween(300, easing = FastOutSlowInEasing), targetScale = 0.92f) +
+                            fadeOut(tween(300))
+                    },
                 ) {
                     composable("main") { MainScreen(navController) }
                     composable("settings") { SettingsScreen(navController) }

@@ -128,12 +128,12 @@ fun BeamTheme(prefs: ThemePrefs, content: @Composable () -> Unit) {
         baseScheme.copy(
             background = Color.Black,
             surface = Color.Black,
-            surfaceVariant = Color(0xFF0D0D0D),
-            surfaceContainer = Color(0xFF090909),
-            surfaceContainerLow = Color(0xFF050505),
+            surfaceVariant = Color(0xFF1C1C1C),
+            surfaceContainer = Color(0xFF141414),
+            surfaceContainerLow = Color(0xFF0C0C0C),
             surfaceContainerLowest = Color.Black,
-            surfaceContainerHigh = Color(0xFF0E0E0E),
-            surfaceContainerHighest = Color(0xFF131313),
+            surfaceContainerHigh = Color(0xFF1E1E1E),
+            surfaceContainerHighest = Color(0xFF242424),
         )
     } else {
         baseScheme
