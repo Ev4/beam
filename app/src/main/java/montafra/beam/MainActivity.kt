@@ -12,7 +12,6 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
@@ -74,20 +73,18 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     startDestination = "main",
                     enterTransition = {
-                        fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)) +
-                            scaleIn(initialScale = 0.92f, animationSpec = tween(300, easing = FastOutSlowInEasing))
+                        fadeIn(tween(300, easing = FastOutSlowInEasing))
                     },
                     exitTransition = {
-                        fadeOut(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
-                            scaleOut(targetScale = 1.10f, animationSpec = tween(250, easing = FastOutSlowInEasing))
+                        scaleOut(tween(300, easing = FastOutSlowInEasing), targetScale = 0.94f) +
+                            fadeOut(tween(250))
                     },
                     popEnterTransition = {
-                        fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)) +
-                            scaleIn(initialScale = 1.10f, animationSpec = tween(300, easing = FastOutSlowInEasing))
+                        fadeIn(tween(300, easing = FastOutSlowInEasing))
                     },
                     popExitTransition = {
-                        fadeOut(animationSpec = tween(250, easing = FastOutSlowInEasing)) +
-                            scaleOut(targetScale = 0.92f, animationSpec = tween(250, easing = FastOutSlowInEasing))
+                        scaleOut(tween(300, easing = FastOutSlowInEasing), targetScale = 0.92f) +
+                            fadeOut(tween(300))
                     },
                 ) {
                     composable("main") { MainScreen(navController) }

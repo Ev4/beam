@@ -34,4 +34,10 @@
     <string name="invertCurrentDesc">Cuando no esté enchufado, activar si \u0022Cargando\u0022 dice \u0022Sí\u0022.</string>
     <string name="workarounds">Soluciones alternativas</string>
     <string name="workaroundsDesc">Muchos teléfonos no implementan correctamente la interfaz de \u0022Android BatteryManager\u0022 y reportarán métricas de batería incorrectas de forma predeterminada. Si es necesario, use la siguiente configuración para solucionar los defectos de implementación en el teléfono.</string>
+    <string name="supportMe">Apoya el desarrollo</string>
+    <string name="copy">Copiar</string>
+    <string name="about">Acerca de</string>
+    <string name="theme">Tema</string>
+    <string name="notification">Notificación</string>
+    <string name="sourceCode">Código fuente</string>
 </resources>

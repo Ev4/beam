@@ -2,10 +2,10 @@ package montafra.beam.ui
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -15,8 +15,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,13 +28,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -42,27 +42,31 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
+import kotlinx.coroutines.launch
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 import montafra.beam.BatteryData
 import montafra.beam.BatteryViewModel
 import montafra.beam.R
@@ -73,89 +77,145 @@ fun MainScreen(navController: NavController, vm: BatteryViewModel = viewModel())
     val data by vm.data.collectAsState()
     val primary = MaterialTheme.colorScheme.primary
     val background = MaterialTheme.colorScheme.background
+    val haptic = LocalHapticFeedback.current
 
-    val glowTransition = rememberInfiniteTransition(label = "screen-glow")
-    val glowPulse by glowTransition.animateFloat(
+    val noiseBitmap = remember {
+        val sz = 256
+        val bmp = android.graphics.Bitmap.createBitmap(sz, sz, android.graphics.Bitmap.Config.ARGB_8888)
+        val rng = java.util.Random(42L)
+        val px = IntArray(sz * sz) {
+            android.graphics.Color.argb(rng.nextInt(55).coerceIn(0, 255), 255, 255, 255)
+        }
+        bmp.setPixels(px, 0, sz, 0, 0, sz, sz)
+        bmp
+    }
+
+    val grainBrush = remember(noiseBitmap) {
+        ShaderBrush(
+            android.graphics.BitmapShader(
+                noiseBitmap,
+                android.graphics.Shader.TileMode.REPEAT,
+                android.graphics.Shader.TileMode.REPEAT,
+            )
+        )
+    }
+
+    // Slow candle-like glow: coprime durations, never sync → organic non-repeating flicker
+    val candleTransition = rememberInfiniteTransition(label = "candle")
+    val f1 by candleTransition.animateFloat(
         initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(2_500, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "glow-pulse",
+        animationSpec = infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "f1",
+    )
+    val f2 by candleTransition.animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1_600, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "f2",
+    )
+    val f3 by candleTransition.animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(2_700, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "f3",
+    )
+    val sway by candleTransition.animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(6_300, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "sway",
+    )
+    val breathe by candleTransition.animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(11_000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "breathe",
     )
 
-    val heroTransition = rememberInfiniteTransition(label = "hero")
-    val rot1 by heroTransition.animateFloat(
-        initialValue = 0f, targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(20_000, easing = LinearEasing)),
-        label = "r1",
-    )
-    val rot2 by heroTransition.animateFloat(
-        initialValue = 0f, targetValue = -360f,
-        animationSpec = infiniteRepeatable(tween(13_000, easing = LinearEasing)),
-        label = "r2",
-    )
-    val rot3 by heroTransition.animateFloat(
-        initialValue = -60f, targetValue = 60f,
-        animationSpec = infiniteRepeatable(tween(3_000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "r3",
-    )
-    val pulse by heroTransition.animateFloat(
-        initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(2_500, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "pulse",
-    )
-    var heroCenter by remember { mutableStateOf(Offset.Zero) }
-    var heroMinDim by remember { mutableFloatStateOf(0f) }
+    val isOled = background == Color.Black
+    val glowScale = when {
+        background.luminance() > 0.5f -> 0.40f
+        isOled -> 0.35f
+        else -> 1.0f
+    }
 
     Box(Modifier.fillMaxSize().background(background)) {
-        if (heroMinDim > 0f) {
-            Canvas(Modifier.fillMaxSize()) {
-                rotate(rot1, pivot = heroCenter) {
-                    val r = heroMinDim * 0.68f
-                    drawArc(
-                        color = primary.copy(alpha = 0.16f),
-                        startAngle = -20f, sweepAngle = 190f, useCenter = false,
-                        topLeft = Offset(heroCenter.x - r, heroCenter.y - r), size = Size(r * 2, r * 2),
-                        style = Stroke(width = 7.dp.toPx(), cap = StrokeCap.Round),
-                    )
+        Canvas(Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            clipRect(left = 0f, top = 0f, right = w, bottom = h * 0.50f) {
+            val cx = w * 0.50f + w * 0.04f * (sway * 2f - 1f)
+            val cy = h * 0.22f + h * 0.03f * breathe
+
+            val outerR = w * 0.76f * (0.90f + 0.10f * f3)
+            drawCircle(
+                brush = Brush.radialGradient(
+                    listOf(primary.copy(alpha = (0.08f + 0.04f * f2) * glowScale), Color.Transparent),
+                    center = Offset(cx, cy), radius = outerR,
+                ),
+                radius = outerR, center = Offset(cx, cy),
+            )
+
+            val nOrbs = 6
+            val ringR    = w * 0.08f
+            val baseOrbR = w * 0.20f
+            for (i in 0 until nOrbs) {
+                val baseAngle = (i.toFloat() / nOrbs) * 2f * PI.toFloat() + sway * 0.5f
+                val driftX = ((f1 - 0.5f) * cos(i * 1.3f).toFloat() +
+                              (f2 - 0.5f) * sin(i * 2.1f).toFloat()) * w * 0.025f
+                val driftY = ((f2 - 0.5f) * cos(i * 1.7f).toFloat() +
+                              (f3 - 0.5f) * sin(i * 0.9f).toFloat()) * h * 0.018f
+                val ox = cx + ringR * cos(baseAngle).toFloat() + driftX
+                val oy = cy + ringR * sin(baseAngle).toFloat() + driftY
+                val sizeFactor = when (i % 5) {
+                    0    -> f1
+                    1    -> f2
+                    2    -> f3
+                    3    -> (f1 + f3) * 0.5f
+                    else -> (f2 + f1) * 0.5f
                 }
-                rotate(rot2, pivot = heroCenter) {
-                    val r = heroMinDim * 0.50f
-                    drawArc(
-                        color = primary.copy(alpha = 0.22f),
-                        startAngle = 45f, sweepAngle = 130f, useCenter = false,
-                        topLeft = Offset(heroCenter.x - r, heroCenter.y - r), size = Size(r * 2, r * 2),
-                        style = Stroke(width = 13.dp.toPx(), cap = StrokeCap.Round),
-                    )
+                val orbRi = baseOrbR * (0.65f + 0.45f * sizeFactor)
+                val phase = when (i % 3) {
+                    0    -> f1 * 0.55f + f2 * 0.45f
+                    1    -> f2 * 0.55f + f3 * 0.45f
+                    else -> f3 * 0.55f + f1 * 0.45f
                 }
-                rotate(rot3, pivot = heroCenter) {
-                    val r = heroMinDim * 0.32f
-                    drawArc(
-                        color = primary.copy(alpha = 0.25f + 0.20f * pulse),
-                        startAngle = 90f, sweepAngle = 70f, useCenter = false,
-                        topLeft = Offset(heroCenter.x - r, heroCenter.y - r), size = Size(r * 2, r * 2),
-                        style = Stroke(width = 20.dp.toPx(), cap = StrokeCap.Round),
-                    )
-                }
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        listOf(primary.copy(alpha = (0.14f + 0.17f * phase) * glowScale), Color.Transparent),
+                        center = Offset(ox, oy), radius = orbRi,
+                    ),
+                    radius = orbRi, center = Offset(ox, oy),
+                )
+            }
+
+            val coreR = w * 0.12f * (0.72f + 0.32f * f1)
+            drawCircle(
+                brush = Brush.radialGradient(
+                    listOf(primary.copy(alpha = (0.26f + 0.18f * (f1 * f2)) * glowScale), Color.Transparent),
+                    center = Offset(cx, cy), radius = coreR,
+                ),
+                radius = coreR, center = Offset(cx, cy),
+            )
             }
         }
+
+        if (!isOled) {
+            Canvas(Modifier.fillMaxSize()) {
+                drawRect(brush = grainBrush, alpha = 22f / 255f)
+            }
+        }
+
         Scaffold(
-            modifier = Modifier.drawBehind {
-                drawRect(
-                    brush = Brush.radialGradient(
-                        listOf(primary.copy(alpha = 0.04f + 0.06f * glowPulse), Color.Transparent),
-                        center = Offset(size.width / 2f, 0f),
-                        radius = size.minDimension * 0.85f,
-                    ),
-                )
-            },
+            modifier = Modifier,
             containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
-                    title = { Text(stringResource(R.string.battery)) },
+                    title = { Text(stringResource(R.string.app_name)) },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
                     ),
                     actions = {
-                        IconButton(onClick = { navController.navigate("settings") }) {
+                        IconButton(onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            navController.navigate("settings")
+                        }) {
                             Icon(
                                 painter = painterResource(R.drawable.ico_settings),
                                 contentDescription = stringResource(R.string.settings),
@@ -171,34 +231,26 @@ fun MainScreen(navController: NavController, vm: BatteryViewModel = viewModel())
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item { Spacer(Modifier.height(4.dp)) }
-                item {
-                    HeroCard(data) { center, minDim ->
-                        heroCenter = center
-                        heroMinDim = minDim
-                    }
-                }
+                item { HeroCard(data, f1, f2, f3, sway, breathe) }
+                item { Spacer(Modifier.height(8.dp)) }
                 item {
                     MetricCard {
                         MetricRow(stringResource(R.string.power), data.power)
-                        HorizontalDivider(Modifier.padding(vertical = 2.dp))
                         MetricRow(stringResource(R.string.current), data.current)
-                        HorizontalDivider(Modifier.padding(vertical = 2.dp))
                         MetricRow(stringResource(R.string.voltage), data.voltage)
-                        HorizontalDivider(Modifier.padding(vertical = 2.dp))
-                        MetricRow(stringResource(R.string.energy), data.energy)
-                        HorizontalDivider(Modifier.padding(vertical = 2.dp))
                         MetricRow(stringResource(R.string.temperature), data.temperature)
+                        MetricRow(stringResource(R.string.energy), data.energy)
                     }
                 }
                 item {
                     MetricCard {
-                        MetricRow(stringResource(R.string.chargeLevel), data.chargeLevel)
-                        HorizontalDivider(Modifier.padding(vertical = 2.dp))
-                        MetricRow(stringResource(R.string.charging), data.charging)
-                        HorizontalDivider(Modifier.padding(vertical = 2.dp))
-                        MetricRow(stringResource(R.string.chargingSince), data.chargingSince)
-                        HorizontalDivider(Modifier.padding(vertical = 2.dp))
-                        MetricRow(stringResource(R.string.timeToFullCharge), data.timeToFullCharge)
+                        val rows = listOf(
+                            stringResource(R.string.chargeLevel) to data.chargeLevel,
+                            stringResource(R.string.charging) to data.charging,
+                            stringResource(R.string.chargingSince) to data.chargingSince,
+                            stringResource(R.string.timeToFullCharge) to data.timeToFullCharge,
+                        ).filter { (_, v) -> v != "-" }
+                        rows.forEach { (label, value) -> MetricRow(label, value) }
                     }
                 }
                 item { Spacer(Modifier.height(16.dp)) }
@@ -210,9 +262,15 @@ fun MainScreen(navController: NavController, vm: BatteryViewModel = viewModel())
 @Composable
 private fun HeroCard(
     data: BatteryData,
-    onBoundsChanged: (center: Offset, minDimension: Float) -> Unit,
+    f1: Float, f2: Float, f3: Float, sway: Float, breathe: Float,
 ) {
-    val onBackground = MaterialTheme.colorScheme.onBackground
+    val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    val primary = MaterialTheme.colorScheme.primary
+    val onSurface = MaterialTheme.colorScheme.onSurface
+
+    val cardScaleX = remember { Animatable(1f) }
+    val cardScaleY = remember { Animatable(1f) }
 
     val animatedProgress by animateFloatAsState(
         targetValue = data.chargeLevelFloat,
@@ -220,21 +278,41 @@ private fun HeroCard(
         label = "charge-progress",
     )
 
-    Box(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .onGloballyPositioned { coords ->
-                val topLeft = coords.localToRoot(Offset.Zero)
-                val sz = coords.size
-                onBoundsChanged(
-                    Offset(topLeft.x + sz.width / 2f, topLeft.y + sz.height / 2f),
-                    minOf(sz.width, sz.height).toFloat(),
+            .scale(scaleX = cardScaleX.value, scaleY = cardScaleY.value)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        scope.launch {
+                            val snap = spring<Float>(
+                                stiffness = Spring.StiffnessHigh,
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                            )
+                            val jelly = spring<Float>(stiffness = 350f, dampingRatio = 0.2f)
+                            // squash-stretch: widen, compress height
+                            launch { cardScaleX.animateTo(1.08f, snap) }
+                            cardScaleY.animateTo(0.96f, snap)
+                            // jelly oscillation back to rest
+                            launch { cardScaleX.animateTo(1f, jelly) }
+                            cardScaleY.animateTo(1f, jelly)
+                        }
+                        tryAwaitRelease()
+                    }
                 )
             },
+        shape = RoundedCornerShape(40.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.45f),
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(24.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -249,29 +327,41 @@ private fun HeroCard(
                     Text(
                         text = value,
                         style = MaterialTheme.typography.displayLarge,
-                        color = onBackground,
+                        color = onSurface,
                     )
                 }
                 Text(
                     text = "W",
                     style = MaterialTheme.typography.displayLarge,
-                    color = onBackground,
+                    color = onSurface,
                 )
             }
-            Spacer(Modifier.height(20.dp))
-            LinearProgressIndicator(
-                progress = { animatedProgress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(MaterialTheme.shapes.small),
-                strokeCap = StrokeCap.Round,
-            )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(24.dp))
+            Canvas(Modifier.fillMaxWidth(0.55f).height(5.dp)) {
+                val half = size.height / 2f
+                val y = half
+                drawLine(
+                    color = primary.copy(alpha = 0.18f),
+                    start = Offset(half, y),
+                    end = Offset(size.width - half, y),
+                    strokeWidth = size.height,
+                    cap = StrokeCap.Round,
+                )
+                if (animatedProgress > 0f) {
+                    drawLine(
+                        color = primary,
+                        start = Offset(half, y),
+                        end = Offset(half + (size.width - size.height) * animatedProgress, y),
+                        strokeWidth = size.height,
+                        cap = StrokeCap.Round,
+                    )
+                }
+            }
+            Spacer(Modifier.height(14.dp))
             Text(
                 text = data.chargeLevel,
                 style = MaterialTheme.typography.labelMedium,
-                color = onBackground.copy(alpha = 0.6f),
+                color = onSurface.copy(alpha = 0.6f),
             )
         }
     }
@@ -281,9 +371,13 @@ private fun HeroCard(
 private fun MetricCard(content: @Composable () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.45f),
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
             content()
         }
     }
@@ -292,7 +386,7 @@ private fun MetricCard(content: @Composable () -> Unit) {
 @Composable
 private fun MetricRow(label: String, value: String) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

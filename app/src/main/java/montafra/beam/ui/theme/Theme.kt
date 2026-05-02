@@ -35,7 +35,7 @@ private fun seedColorScheme(seed: Color, isDark: Boolean): ColorScheme {
     android.graphics.Color.colorToHSV(seed.toArgb(), hsv)
     val h = hsv[0]
     return if (!isDark) lightColorScheme(
-        primary                 = hsvColor(h, 0.80f, 0.47f),
+        primary                 = hsvColor(h, 0.75f, 0.52f),
         onPrimary               = Color.White,
         primaryContainer        = hsvColor(h, 0.22f, 0.97f),
         onPrimaryContainer      = hsvColor(h, 0.88f, 0.22f),
@@ -128,12 +128,12 @@ fun BeamTheme(prefs: ThemePrefs, content: @Composable () -> Unit) {
         baseScheme.copy(
             background = Color.Black,
             surface = Color.Black,
-            surfaceVariant = Color(0xFF0D0D0D),
-            surfaceContainer = Color(0xFF090909),
-            surfaceContainerLow = Color(0xFF050505),
+            surfaceVariant = Color(0xFF1C1C1C),
+            surfaceContainer = Color(0xFF141414),
+            surfaceContainerLow = Color(0xFF0C0C0C),
             surfaceContainerLowest = Color.Black,
-            surfaceContainerHigh = Color(0xFF0E0E0E),
-            surfaceContainerHighest = Color(0xFF131313),
+            surfaceContainerHigh = Color(0xFF1E1E1E),
+            surfaceContainerHighest = Color(0xFF242424),
         )
     } else {
         baseScheme

@@ -34,4 +34,10 @@
     <string name="invertCurrentDesc">When not plugged in, enable this toggle if \u0022Charging\u0022 says \u0022yes\u0022.</string>
     <string name="workarounds">Workarounds</string>
     <string name="workaroundsDesc">Many phones do not correctly implement the Android BatteryManager interface, and will report incorrect battery metrics by default. If needed, use the following settings to workaround implementation defects on your phone.</string>
+    <string name="supportMe">Support development</string>
+    <string name="copy">Copy</string>
+    <string name="about">About</string>
+    <string name="theme">Theme</string>
+    <string name="notification">Notification</string>
+    <string name="sourceCode">Source Code</string>
 </resources>
