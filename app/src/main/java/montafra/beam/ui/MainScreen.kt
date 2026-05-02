@@ -32,7 +32,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -237,13 +236,9 @@ fun MainScreen(navController: NavController, vm: BatteryViewModel = viewModel())
                 item {
                     MetricCard {
                         MetricRow(stringResource(R.string.power), data.power)
-                        HorizontalDivider(Modifier.padding(vertical = 2.dp))
                         MetricRow(stringResource(R.string.current), data.current)
-                        HorizontalDivider(Modifier.padding(vertical = 2.dp))
                         MetricRow(stringResource(R.string.voltage), data.voltage)
-                        HorizontalDivider(Modifier.padding(vertical = 2.dp))
                         MetricRow(stringResource(R.string.temperature), data.temperature)
-                        HorizontalDivider(Modifier.padding(vertical = 2.dp))
                         MetricRow(stringResource(R.string.energy), data.energy)
                     }
                 }
@@ -255,10 +250,7 @@ fun MainScreen(navController: NavController, vm: BatteryViewModel = viewModel())
                             stringResource(R.string.chargingSince) to data.chargingSince,
                             stringResource(R.string.timeToFullCharge) to data.timeToFullCharge,
                         ).filter { (_, v) -> v != "-" }
-                        rows.forEachIndexed { i, (label, value) ->
-                            if (i > 0) HorizontalDivider(Modifier.padding(vertical = 2.dp))
-                            MetricRow(label, value)
-                        }
+                        rows.forEach { (label, value) -> MetricRow(label, value) }
                     }
                 }
                 item { Spacer(Modifier.height(16.dp)) }
@@ -379,9 +371,13 @@ private fun HeroCard(
 private fun MetricCard(content: @Composable () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.45f),
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
             content()
         }
     }
@@ -390,7 +386,7 @@ private fun MetricCard(content: @Composable () -> Unit) {
 @Composable
 private fun MetricRow(label: String, value: String) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

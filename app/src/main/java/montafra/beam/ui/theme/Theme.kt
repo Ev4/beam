@@ -35,7 +35,7 @@ private fun seedColorScheme(seed: Color, isDark: Boolean): ColorScheme {
     android.graphics.Color.colorToHSV(seed.toArgb(), hsv)
     val h = hsv[0]
     return if (!isDark) lightColorScheme(
-        primary                 = hsvColor(h, 0.80f, 0.47f),
+        primary                 = hsvColor(h, 0.75f, 0.52f),
         onPrimary               = Color.White,
         primaryContainer        = hsvColor(h, 0.22f, 0.97f),
         onPrimaryContainer      = hsvColor(h, 0.88f, 0.22f),

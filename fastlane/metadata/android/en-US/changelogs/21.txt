@@ -1,0 +1,6 @@
+• Redesigned main screen cards with frosted glass style
+• Settings reorganised into labelled sections: Theme, Notification, Workarounds, About
+• Added About section with donation addresses (BTC · XMR · Lightning), source code link, and app info
+• Tapping the app version row opens system app settings
+• Default custom theme colour is now purple
+• Adjusted light theme primary colour

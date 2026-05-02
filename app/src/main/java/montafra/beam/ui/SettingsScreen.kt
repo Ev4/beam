@@ -1,7 +1,11 @@
 package montafra.beam.ui
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -21,6 +25,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -33,6 +41,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -43,6 +52,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -51,6 +61,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -75,6 +86,7 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
     var invertCurrent by remember { mutableStateOf(prefs.getBoolean("invertCurrent", false)) }
     var themeMode by remember { mutableStateOf(prefs.getString("themeMode", "system") ?: "system") }
     var customColorValue by remember { mutableIntStateOf(prefs.getInt("themeColorValue", colorSwatches[6])) }
+    var showDonateDialog by remember { mutableStateOf(false) }
 
     fun saveIndicatorEntries() {
         prefs.edit().putStringSet("indicatorEntries", indicatorEntries).commit()
@@ -122,8 +134,10 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
             // Theme
             item {
                 Spacer(Modifier.height(4.dp))
-                SectionHeader(stringResource(R.string.themeMode))
+                SectionHeader(stringResource(R.string.theme))
                 Spacer(Modifier.height(8.dp))
+                SubLabel(stringResource(R.string.themeMode))
+                Spacer(Modifier.height(6.dp))
                 val modeOptions = listOf(
                     stringResource(R.string.themeModeSystem),
                     stringResource(R.string.themeModeLight),
@@ -147,8 +161,8 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                SectionHeader(stringResource(R.string.themeColor))
-                Spacer(Modifier.height(8.dp))
+                SubLabel(stringResource(R.string.themeColor))
+                Spacer(Modifier.height(6.dp))
                 val colorOptions = listOf(
                     stringResource(R.string.themeColorAuto),
                     stringResource(R.string.themeColorCustom),
@@ -163,7 +177,7 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
                                     customColorValue = -1
                                     prefs.edit().putInt("themeColorValue", -1).commit()
                                 } else {
-                                    val color = if (customColorValue != -1) customColorValue else colorSwatches[11]
+                                    val color = if (customColorValue != -1) customColorValue else colorSwatches[6]
                                     customColorValue = color
                                     prefs.edit().putInt("themeColorValue", color).commit()
                                 }
@@ -190,10 +204,13 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
                 }
             }
 
-            // Status Bar Indicator
+            // Notification
             item {
-                SectionHeader(stringResource(R.string.statusBarIndicator))
+                Spacer(Modifier.height(4.dp))
+                SectionHeader(stringResource(R.string.notification))
                 Spacer(Modifier.height(8.dp))
+                SubLabel(stringResource(R.string.statusBarIndicator))
+                Spacer(Modifier.height(6.dp))
                 val metricLabels = listOf("A", "Ah", "°C", "V", "Wh", "%")
                 val metricKeys   = listOf("A", "Ah", "C",  "V", "Wh", "%")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -263,12 +280,16 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
                         )
                     },
                 )
-            }
-
-            // Live preview — shows effect of workaround settings
-            item {
-                androidx.compose.material3.Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                Spacer(Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.45f),
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(stringResource(R.string.charging), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(data.charging, style = MaterialTheme.typography.bodyLarge)
@@ -282,8 +303,95 @@ fun SettingsScreen(navController: NavController, vm: BatteryViewModel = viewMode
                 }
             }
 
+            // About
+            item {
+                val version = remember {
+                    try { context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "" }
+                    catch (_: Exception) { "" }
+                }
+                Spacer(Modifier.height(4.dp))
+                SectionHeader(stringResource(R.string.about))
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.supportMe)) },
+                    supportingContent = { Text("BTC · XMR · Lightning") },
+                    leadingContent = {
+                        Icon(
+                            painter = painterResource(R.drawable.ico_donate),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                    modifier = Modifier.clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        showDonateDialog = true
+                    },
+                )
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.sourceCode)) },
+                    supportingContent = { Text("github.com/montafra/beam") },
+                    leadingContent = {
+                        Icon(
+                            painter = painterResource(R.drawable.ico_github),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                    modifier = Modifier.clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/montafra/beam"))
+                        )
+                    },
+                )
+                ListItem(
+                    headlineContent = { Text("Beam $version") },
+                    supportingContent = { Text("No ads · No tracking · No data collection") },
+                    leadingContent = {
+                        Icon(
+                            painter = painterResource(R.drawable.ico_info),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                    modifier = Modifier.clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        context.startActivity(
+                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                setData(Uri.fromParts("package", context.packageName, null))
+                            }
+                        )
+                    },
+                )
+            }
+
             item { Spacer(Modifier.height(16.dp)) }
         }
+    }
+
+    if (showDonateDialog) {
+        val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        AlertDialog(
+            onDismissRequest = { showDonateDialog = false },
+            title = { Text(stringResource(R.string.supportMe)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    DonateRow(
+                        "BTC",
+                        "sp1qqfzps48q94usuqwhfcp082kg3pphr9zyh32cg4h4q84rvr6pa3d6vq56w3trm5cs5rgw5g3wcravusunh39utwfy9p2fe7e4g774r66rwcagqpmy",
+                        clipboardManager,
+                    )
+                    DonateRow(
+                        "XMR",
+                        "876wwukGWhU9H6qez4Qmt5gTBBmdKzoDg3zvT33QCwjy9e7jS7MVjQySUCpNhoVrFcF15AicUJ4VaVrTKAXGMu5D7yUbqFs",
+                        clipboardManager,
+                    )
+                    DonateRow("Lightning", "monta@cake.cash", clipboardManager)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDonateDialog = false }) { Text("Close") }
+            },
+        )
     }
 }
 
@@ -293,6 +401,15 @@ private fun SectionHeader(text: String) {
         text = text,
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
+    )
+}
+
+@Composable
+private fun SubLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -311,6 +428,35 @@ private fun ColorSwatchPicker(selectedColor: Int?, onColorSelected: (Int) -> Uni
                 row.forEach { color ->
                     ColorSwatch(color, selected = selectedColor == color) { onColorSelected(color) }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DonateRow(label: String, address: String, clipboard: ClipboardManager) {
+    val haptic = LocalHapticFeedback.current
+    Column {
+        Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.height(2.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = address,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                clipboard.setPrimaryClip(ClipData.newPlainText(label, address))
+            }) {
+                Icon(
+                    painter = painterResource(R.drawable.ico_copy),
+                    contentDescription = stringResource(R.string.copy),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
             }
         }
     }
