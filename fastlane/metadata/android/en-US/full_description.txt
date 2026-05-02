@@ -1,4 +1,4 @@
-<i>Wattz</i> is a simple battery indicator. It shows one of several real time battery metrics right in your status bar. Open the app to see detailed battery metrics and and edit your settings.
+<i>Beam</i> is a simple battery indicator. It shows one of several real time battery metrics right in your status bar. Open the app to see detailed battery metrics and and edit your settings.
 
 Notification permissions are required to show the indicator in the status bar. Please open the app once to automatically start the indicator service.
 

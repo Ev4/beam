@@ -11,7 +11,7 @@ val localProps = Properties().apply {
 }
 
 android {
-    compileSdk = 34
+    compileSdk = 37
 
     signingConfigs {
         create("release") {
@@ -25,11 +25,13 @@ android {
     defaultConfig {
         applicationId = "montafra.beam"
         minSdk = 28 // BatteryManager.computeChargeTimeRemaining()
-        // work around unused library resources
-        resourceConfigurations.addAll(listOf("anydpi", "en", "es"))
-        targetSdk = 34
+        targetSdk = 37
         versionCode = 20
-        versionName = "1.20"
+        versionName = "1.0.2"
+    }
+
+    androidResources {
+        localeFilters.addAll(listOf("en", "es"))
     }
 
     buildFeatures {
@@ -48,16 +50,19 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
     namespace = "montafra.beam"
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
+}
+
 dependencies {
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("androidx.core:core-ktx:1.18.0")
+    implementation("com.google.android.material:material:1.13.0")
 
     val composeBom = platform("androidx.compose:compose-bom:2024.09.03")
     implementation(composeBom)
