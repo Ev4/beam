@@ -28,9 +28,10 @@ class StatusService : Service() {
         textAlign = Paint.Align.CENTER
     }
     private var indicatorEntries: Set<String> = emptySet()
+    private var notificationIndicator: String = "W"
     private var initialized = false
     private lateinit var msgReceiver: MsgReceiver
-    private val metricOrder = listOf("A", "Ah", "C", "V", "Wh", "%")
+    private val metricOrder = listOf("W", "A", "Ah", "C", "V", "Wh", "%")
     private lateinit var noteIntent: PendingIntent
     private lateinit var noteMgr: NotificationManager
     private var pluggedInAt: ZonedDateTime? = null
@@ -46,8 +47,7 @@ class StatusService : Service() {
             when (intent.action) {
                 batteryDataReq -> updateData()
                 settingsUpdateInd -> {
-                    loadSettings()
-                    update()
+                    if (loadSettings()) update()
                 }
                 Intent.ACTION_POWER_CONNECTED -> {
                     pluggedInAt = ZonedDateTime.now()
@@ -63,11 +63,19 @@ class StatusService : Service() {
         }
     }
 
-    private fun loadSettings() {
+    private fun loadSettings(): Boolean {
         val settings = getSharedPreferences(settingsName, MODE_MULTI_PROCESS)
+        if (!settings.getBoolean("notificationEnabled", true)) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            task.stop()
+            stopSelf()
+            return false
+        }
         battery.currentScalar = settings.getFloat("currentScalar", 1f).toDouble()
         battery.invertCurrent = settings.getBoolean("invertCurrent", false)
         indicatorEntries = settings.getStringSet("indicatorEntries", null) ?: emptySet()
+        notificationIndicator = settings.getString("notificationIndicator", "W") ?: "W"
+        return true
     }
 
     private fun metricLabel(key: String) = getString(when (key) {
@@ -139,7 +147,7 @@ class StatusService : Service() {
         super.onStartCommand(intent, flags, startId)
 
         init()
-        loadSettings()
+        if (!loadSettings()) return START_NOT_STICKY
         task.start()
 
         try {
@@ -184,7 +192,8 @@ class StatusService : Service() {
     }
 
     private fun buildNotification(): Notification {
-        val wattsValue = fmt(snapshot.watts)
+        val iconValue = metricValue(notificationIndicator)
+        val iconUnit  = metricUnit(notificationIndicator)
         val timeText = when (val seconds = snapshot.secondsUntilCharged) {
             null -> ""
             0.0  -> getString(R.string.fullyCharged)
@@ -192,13 +201,13 @@ class StatusService : Service() {
         }
 
         val builder = Notification.Builder(this, noteChannelId)
-            .setContentTitle("$wattsValue W")
-            .setSmallIcon(renderIcon(wattsValue, "W"))
+            .setContentTitle("$iconValue $iconUnit")
+            .setSmallIcon(renderIcon(iconValue, iconUnit))
             .setContentIntent(noteIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
 
-        val entries = indicatorEntries.filter { it != "W" }.sortedBy { metricOrder.indexOf(it) }
+        val entries = indicatorEntries.filter { it != notificationIndicator }.sortedBy { metricOrder.indexOf(it) }
 
         if (entries.isEmpty()) {
             builder.setStyle(null).setContentText(timeText)

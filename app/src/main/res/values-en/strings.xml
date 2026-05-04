@@ -9,7 +9,8 @@
     <string name="energy">Energy</string>
     <string name="fullyCharged">fully charged</string>
     <string name="indeterminate">-</string>
-    <string name="statusBarIndicator">Status Bar Indicator</string>
+    <string name="statusBarIndicator">Notification Entries</string>
+    <string name="notificationIcon">Notification Icon</string>
     <string name="no">no</string>
     <string name="power">Power</string>
     <string name="settings">Settings</string>
@@ -39,5 +40,10 @@
     <string name="about">About</string>
     <string name="theme">Theme</string>
     <string name="notification">Notification</string>
+    <string name="themeDesc">Mode, colour</string>
+    <string name="notificationDesc">Icon, entries</string>
+    <string name="notificationEnableDesc">Persistent battery notification</string>
+    <string name="workaroundsShortDesc">Device-specific fixes</string>
     <string name="sourceCode">Source Code</string>
+    <string name="advancedSettings">Advanced Settings</string>
 </resources>

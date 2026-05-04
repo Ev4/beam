@@ -8,17 +8,21 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideIn
+import androidx.compose.animation.slideOut
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import montafra.beam.ui.MainScreen
+import montafra.beam.ui.NotificationSettingsScreen
 import montafra.beam.ui.SettingsScreen
+import montafra.beam.ui.ThemeSettingsScreen
+import montafra.beam.ui.WorkaroundsSettingsScreen
 import montafra.beam.ui.theme.BeamTheme
 import montafra.beam.ui.theme.rememberThemePrefs
 
@@ -73,22 +77,23 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     startDestination = "main",
                     enterTransition = {
-                        fadeIn(tween(300, easing = FastOutSlowInEasing))
+                        slideIn(tween(340, easing = LinearOutSlowInEasing)) { IntOffset(it.width, 0) }
                     },
                     exitTransition = {
-                        scaleOut(tween(300, easing = FastOutSlowInEasing), targetScale = 0.94f) +
-                            fadeOut(tween(250))
+                        slideOut(tween(280, easing = FastOutLinearInEasing)) { IntOffset(-it.width / 3, 0) }
                     },
                     popEnterTransition = {
-                        fadeIn(tween(300, easing = FastOutSlowInEasing))
+                        slideIn(tween(340, easing = LinearOutSlowInEasing)) { IntOffset(-it.width / 3, 0) }
                     },
                     popExitTransition = {
-                        scaleOut(tween(300, easing = FastOutSlowInEasing), targetScale = 0.92f) +
-                            fadeOut(tween(300))
+                        slideOut(tween(280, easing = FastOutLinearInEasing)) { IntOffset(it.width, 0) }
                     },
                 ) {
                     composable("main") { MainScreen(navController) }
                     composable("settings") { SettingsScreen(navController) }
+                    composable("settings/theme") { ThemeSettingsScreen(navController) }
+                    composable("settings/notification") { NotificationSettingsScreen(navController) }
+                    composable("settings/workarounds") { WorkaroundsSettingsScreen(navController) }
                 }
             }
         }

@@ -1,4 +1,5 @@
 import java.util.Properties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
@@ -26,8 +27,8 @@ android {
         applicationId = "montafra.beam"
         minSdk = 28 // BatteryManager.computeChargeTimeRemaining()
         targetSdk = 37
-        versionCode = 20
-        versionName = "1.0.2"
+        versionCode = 21
+        versionName = "1.3"
     }
 
     androidResources {
